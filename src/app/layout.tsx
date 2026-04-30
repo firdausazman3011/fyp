@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
+import { Nunito } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "@/components/ui/ToastProvider";
+
+const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito" });
 
 export const metadata: Metadata = {
-  title: "UniConnect Authentication",
-  description: "Secure access for UniConnect users and administrators",
+  title: "UniConnect",
+  description: "Community Monitoring and Support Platform",
 };
 
 export default function RootLayout({
@@ -13,7 +17,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={nunito.className}>
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

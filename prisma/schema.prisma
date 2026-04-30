@@ -12,14 +12,41 @@ enum Role {
   ADMIN
 }
 
+enum ActivityStatus {
+  DRAFT
+  PUBLISHED
+  COMPLETED
+  CANCELLED
+}
+
+enum SuggestionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
 model User {
   id             String               @id @default(cuid())
+  name           String               @default("User")
   email          String               @unique
   passwordHash   String
   role           Role                 @default(USER)
+  profilePicture String?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   passwordResets PasswordResetToken[]
+  adminEmailChangeTokens AdminEmailChangeToken[]
+  suggestions    Suggestion[]
+  participations ActivityParticipant[]
+  attendances    AttendanceRecord[]
+  createdActivities Activity[]    @relation("ActivityCreatedByAdmin")
+  convertedSuggestions Suggestion[] @relation("SuggestionConvertedByAdmin")
+  adminAuditLogs AuditLog[]
 }
 
 model PasswordResetToken {
@@ -34,4 +61,103 @@ model PasswordResetToken {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model AdminEmailChangeToken {
+  id        String   @id @default(cuid())
+  adminId   String
+  newEmail  String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([expiresAt])
+}
+
+model Activity {
+  id               String                @id @default(cuid())
+  title            String
+  description      String
+  date             DateTime
+  timeLabel        String
+  durationMinutes  Int                   @default(120)
+  participantLimit Int                   @default(50)
+  location         String
+  organizer        String
+  imageUrl         String
+  status           ActivityStatus        @default(DRAFT)
+  createdByAdminId String
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  participants     ActivityParticipant[]
+  attendance       AttendanceRecord[]
+  sourceSuggestion Suggestion?
+  createdByAdmin   User                  @relation("ActivityCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: Restrict)
+
+  @@index([status, date])
+}
+
+model ActivityParticipant {
+  id         String   @id @default(cuid())
+  activityId String
+  userId     String
+  joinedAt   DateTime @default(now())
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, userId])
+  @@index([userId])
+}
+
+model AttendanceRecord {
+  id          String           @id @default(cuid())
+  activityId  String
+  userId      String
+  status      AttendanceStatus
+  confirmedAt DateTime         @default(now())
+  activity    Activity         @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, userId])
+}
+
+model Suggestion {
+  id              String           @id @default(cuid())
+  title           String
+  description     String
+  date            DateTime
+  location        String
+  status          SuggestionStatus @default(PENDING)
+  adminRemark     String?
+  submittedById   String
+  submittedAt     DateTime         @default(now())
+  convertedAt     DateTime?
+  convertedById   String?
+  convertedToId   String?          @unique
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  submittedBy     User             @relation(fields: [submittedById], references: [id], onDelete: Cascade)
+  convertedBy     User?            @relation("SuggestionConvertedByAdmin", fields: [convertedById], references: [id], onDelete: SetNull)
+  convertedTo     Activity?        @relation(fields: [convertedToId], references: [id], onDelete: SetNull)
+
+  @@index([submittedById, submittedAt])
+  @@index([status])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  adminId     String
+  action      String
+  entityType  String
+  entityId    String
+  details     String?
+  createdAt   DateTime @default(now())
+  performedBy User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+  @@index([entityType, entityId])
 }

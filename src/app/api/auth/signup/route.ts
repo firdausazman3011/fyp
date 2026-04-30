@@ -3,12 +3,17 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { validateCsrfOrThrow } from "@/lib/security";
 import { signupSchema, toZodErrorMessage } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
+    const csrfError = await validateCsrfOrThrow();
+    if (csrfError) return csrfError;
+
     const body = await request.json();
     const parsed = signupSchema.parse({
+      name: String(body.name ?? "").trim(),
       email: String(body.email ?? "").toLowerCase(),
       password: String(body.password ?? ""),
     });
@@ -21,6 +26,7 @@ export async function POST(request: Request) {
 
     await prisma.user.create({
       data: {
+        name: parsed.name,
         email: parsed.email,
         passwordHash,
         role: "USER",

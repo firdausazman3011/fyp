@@ -7,11 +7,20 @@
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  @apply bg-mainBg text-textPrimary antialiased;
+  background-image:
+    radial-gradient(circle at top left, rgba(231, 113, 125, 0.14), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(175, 210, 117, 0.18), transparent 32%);
 }
 
 input:focus-visible,
 button:focus-visible,
 a:focus-visible {
-  @apply outline-none ring-2 ring-blue-500 ring-offset-2 ring-offset-white;
+  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-cardBg;
+}
+
+input,
+textarea,
+select {
+  @apply text-textPrimary placeholder:text-textSecondary;
 }

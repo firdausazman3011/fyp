@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { AuthInput } from "@/components/auth/AuthInput";
 import { SubmitButton } from "@/components/auth/SubmitButton";
+import { fetchCsrfToken } from "@/lib/client-security";
 
 export function LoginForm() {
   const router = useRouter();
@@ -13,24 +14,29 @@ export function LoginForm() {
 
   async function handleSubmit(formData: FormData) {
     setError(null);
+    const csrfToken = await fetchCsrfToken();
+    if (!csrfToken) {
+      setError("Unable to login.");
+      return;
+    }
 
     const response = await fetch("/api/auth/login", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
       body: JSON.stringify({
         email: formData.get("email"),
         password: formData.get("password"),
       }),
     });
 
-    const data = (await response.json()) as { error?: string };
+    const data = (await response.json()) as { error?: string; role?: "USER" | "ADMIN" };
 
     if (!response.ok) {
       setError(data.error ?? "Invalid email or password.");
       return;
     }
 
-    router.push("/");
+    router.push(data.role === "ADMIN" ? "/admin/dashboard" : "/home");
     router.refresh();
   }
 
@@ -60,8 +66,8 @@ export function LoginForm() {
       <SubmitButton label="Login" pendingLabel="Logging in..." />
 
       <div className="flex items-center justify-between text-sm">
-        <Link href="/signup" className="text-slate-600 hover:text-slate-900">Create account</Link>
-        <Link href="/forgot-password" className="text-blue-600 hover:text-blue-500">Forgot password?</Link>
+        <Link href="/signup" className="text-textSecondary hover:text-textPrimary">Create account</Link>
+        <Link href="/forgot-password" className="text-primary hover:opacity-90">Forgot password?</Link>
       </div>
     </form>
   );

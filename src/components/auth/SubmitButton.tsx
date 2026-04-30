@@ -14,7 +14,7 @@ export function SubmitButton({ label, pendingLabel = "Please wait..." }: SubmitB
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+      className="inline-flex w-full items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
     >
       {pending ? pendingLabel : label}
     </button>

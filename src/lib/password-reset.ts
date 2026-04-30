@@ -43,10 +43,12 @@ export async function consumeResetToken(rawToken: string) {
   if (resetRecord.usedAt) return null;
   if (resetRecord.expiresAt.getTime() < Date.now()) return null;
 
+  return resetRecord;
+}
+
+export async function markResetTokenUsed(id: string) {
   await prisma.passwordResetToken.update({
-    where: { id: resetRecord.id },
+    where: { id },
     data: { usedAt: new Date() },
   });
-
-  return resetRecord;
 }

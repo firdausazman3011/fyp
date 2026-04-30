@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { AuthInput } from "@/components/auth/AuthInput";
 import { SubmitButton } from "@/components/auth/SubmitButton";
+import { fetchCsrfToken } from "@/lib/client-security";
 
 export function ResetPasswordForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const token = useMemo(() => searchParams.get("token") ?? "", [searchParams]);
 
@@ -17,10 +20,15 @@ export function ResetPasswordForm() {
   async function handleSubmit(formData: FormData) {
     setError(null);
     setSuccess(null);
+    const csrfToken = await fetchCsrfToken();
+    if (!csrfToken) {
+      setError("Unable to reset password.");
+      return;
+    }
 
     const response = await fetch("/api/auth/reset-password", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
       body: JSON.stringify({
         token,
         password: formData.get("password"),
@@ -35,6 +43,8 @@ export function ResetPasswordForm() {
     }
 
     setSuccess(data.message ?? "Password reset successful.");
+    router.push("/login");
+    router.refresh();
   }
 
   if (!token) {
@@ -53,15 +63,15 @@ export function ResetPasswordForm() {
         required
       />
 
-      <p className="text-xs text-slate-500">Must be 8+ chars with uppercase, number, and symbol (!@#$%^&*).</p>
+      <p className="text-xs text-textSecondary">Must be 8+ chars with uppercase, lowercase, number, and symbol (!@#$%^&*).</p>
 
-      {error ? <p className="rounded-lg bg-rose-50 p-2 text-sm text-rose-700">{error}</p> : null}
+      {error ? <p className="rounded-lg bg-rose-50 p-2 text-sm text-statusRejected">{error}</p> : null}
       {success ? <p className="rounded-lg bg-emerald-50 p-2 text-sm text-emerald-700">{success}</p> : null}
 
       <SubmitButton label="Reset password" pendingLabel="Resetting..." />
 
-      <p className="text-center text-sm text-slate-600">
-        Return to <Link href="/login" className="text-blue-600 hover:text-blue-500">Login</Link>
+      <p className="text-center text-sm text-textSecondary">
+        Return to <Link href="/login" className="text-primary hover:opacity-90">Login</Link>
       </p>
     </form>
   );

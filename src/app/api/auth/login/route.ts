@@ -3,10 +3,14 @@ import { NextResponse } from "next/server";
 
 import { createAuthToken, setAuthCookie } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { validateCsrfOrThrow } from "@/lib/security";
 import { loginSchema, toZodErrorMessage } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
+    const csrfError = await validateCsrfOrThrow();
+    if (csrfError) return csrfError;
+
     const body = await request.json();
     const parsed = loginSchema.parse({
       email: String(body.email ?? "").toLowerCase(),
@@ -31,7 +35,7 @@ export async function POST(request: Request) {
 
     await setAuthCookie(token);
 
-    return NextResponse.json({ role: user.role, email: user.email });
+    return NextResponse.json({ role: user.role, email: user.email, name: user.name });
   } catch (error) {
     const message = toZodErrorMessage(error);
     const status = message === "Invalid input." ? 500 : 400;

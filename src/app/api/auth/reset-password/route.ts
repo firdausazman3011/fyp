@@ -1,12 +1,16 @@
 import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 
-import { consumeResetToken } from "@/lib/password-reset";
+import { consumeResetToken, markResetTokenUsed } from "@/lib/password-reset";
 import { prisma } from "@/lib/prisma";
+import { validateCsrfOrThrow } from "@/lib/security";
 import { resetPasswordSchema, toZodErrorMessage } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
+    const csrfError = await validateCsrfOrThrow();
+    if (csrfError) return csrfError;
+
     const body = await request.json();
     const parsed = resetPasswordSchema.parse({
       token: String(body.token ?? ""),
@@ -32,6 +36,7 @@ export async function POST(request: Request) {
       where: { id: resetRecord.user.id },
       data: { passwordHash: newHash },
     });
+    await markResetTokenUsed(resetRecord.id);
 
     return NextResponse.json({ message: "Password reset successful. You can now login." });
   } catch (error) {
