@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ReviewSuggestionActions } from "@/components/suggestions/ReviewSuggestionActions";
+import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
 
 type SuggestionItem = {
   id: string;
@@ -71,9 +72,9 @@ export function SuggestionFilterList({ suggestions, statusClass }: Props) {
             <p className="mt-2 text-sm text-textSecondary">{suggestion.description}</p>
             <div className="mt-4 grid gap-1 text-sm text-textSecondary">
               <p>Submitted By: {suggestion.submittedBy.name} ({suggestion.submittedBy.email})</p>
-              <p>Submitted On: {new Date(suggestion.submittedAt).toLocaleString()}</p>
+              <p>Submitted On: {formatDateTimeDDMMYYYY(suggestion.submittedAt)}</p>
               <p>Suggested Location: {suggestion.location}</p>
-              <p>Suggested Date: {new Date(suggestion.date).toLocaleDateString()}</p>
+              <p>Suggested Date: {formatDateDDMMYYYY(suggestion.date)}</p>
             </div>
             <ReviewSuggestionActions
               suggestionId={suggestion.id}

@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { AppImage } from "@/components/ui/AppImage";
 import { isActivityCompleted } from "@/lib/activity-time";
+import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
 
 type ActivityItem = {
   id: string;
@@ -481,7 +482,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                 </div>
                 <p className="text-sm text-textSecondary">{activity.description}</p>
                 <div className="grid gap-1 text-sm text-textSecondary sm:grid-cols-2">
-                  <p>Date: {new Date(activity.date).toLocaleDateString()}</p>
+                  <p>Date: {formatDateDDMMYYYY(activity.date)}</p>
                   <p>Time: {activity.timeLabel}</p>
                   <p>Duration: {activity.durationMinutes} mins</p>
                   <p>
@@ -590,7 +591,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                       <div key={`${record.id}-${record.confirmedAt}`} className="rounded-2xl bg-mainBg px-4 py-3">
                         <p className="font-medium text-textPrimary">{record.name}</p>
                         <p className="text-sm text-textSecondary">{record.email}</p>
-                        <p className="text-xs text-textSecondary">Signed at: {new Date(record.confirmedAt).toLocaleString()}</p>
+                        <p className="text-xs text-textSecondary">Signed at: {formatDateTimeDDMMYYYY(record.confirmedAt)}</p>
                       </div>
                     ))
                   ) : (

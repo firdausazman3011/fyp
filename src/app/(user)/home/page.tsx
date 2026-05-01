@@ -3,6 +3,7 @@ import { SuggestionStatus } from "@prisma/client";
 import { getCurrentAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AppImage } from "@/components/ui/AppImage";
+import { formatDateDDMMYYYY } from "@/lib/date-format";
 
 export default async function UserHomePage() {
   const authUser = await getCurrentAuthUser();
@@ -70,7 +71,7 @@ export default async function UserHomePage() {
                         {suggestion.title}
                       </Link>
                     </td>
-                    <td className="px-5 py-3 text-textSecondary">{new Date(suggestion.date).toLocaleDateString()}</td>
+                    <td className="px-5 py-3 text-textSecondary">{formatDateDDMMYYYY(suggestion.date)}</td>
                     <td className="px-5 py-3 text-textSecondary">{suggestion.location}</td>
                     <td className="px-5 py-3">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass[displayStatus]}`}>
@@ -116,7 +117,7 @@ export default async function UserHomePage() {
               </div>
               <p className="mt-1 text-sm text-textSecondary">{activity.description}</p>
               <p className="mt-3 text-xs text-textSecondary">
-                {new Date(activity.date).toLocaleDateString()} • {activity.location} • {activity.participants.length} participants
+                {formatDateDDMMYYYY(activity.date)} • {activity.location} • {activity.participants.length} participants
               </p>
             </div>
           </article>

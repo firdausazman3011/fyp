@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { isActivityCompleted } from "@/lib/activity-time";
 import { AppImage } from "@/components/ui/AppImage";
+import { formatDateDDMMYYYY } from "@/lib/date-format";
 
 export default async function AdminDashboardPage() {
   const [latestSuggestions, rawLatestActivities, suggestionCounts, allActivities] = await Promise.all([
@@ -107,7 +108,7 @@ export default async function AdminDashboardPage() {
                     <td className="px-5 py-3 font-medium text-textPrimary">
                       <Link className="underline-offset-2 hover:underline" href={`/admin/suggestions?focus=${item.id}`}>{item.title}</Link>
                     </td>
-                    <td className="px-5 py-3 text-textSecondary">{new Date(item.date).toLocaleDateString()}</td>
+                    <td className="px-5 py-3 text-textSecondary">{formatDateDDMMYYYY(item.date)}</td>
                     <td className="px-5 py-3 text-textSecondary">{item.location}</td>
                     <td className="px-5 py-3">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
@@ -145,7 +146,7 @@ export default async function AdminDashboardPage() {
                   </div>
                   <p className="mt-1 text-sm text-textSecondary">{item.description}</p>
                   <p className="mt-3 text-xs text-textSecondary">
-                    {new Date(item.date).toLocaleDateString()} • {item.location} • {item.participants.length} participants
+                    {formatDateDDMMYYYY(item.date)} • {item.location} • {item.participants.length} participants
                   </p>
                 </div>
               </article>

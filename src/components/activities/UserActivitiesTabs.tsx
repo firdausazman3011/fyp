@@ -6,6 +6,7 @@ import { ActivityStatus } from "@prisma/client";
 import { AppImage } from "@/components/ui/AppImage";
 import { ActivityParticipationPanel } from "@/components/activities/ActivityParticipationPanel";
 import { getActivityEnd, isActivityActiveNow } from "@/lib/activity-time";
+import { formatDateDDMMYYYY } from "@/lib/date-format";
 
 type ActivityItem = {
   id: string;
@@ -101,7 +102,7 @@ export function UserActivitiesTabs({ activities, authUserId }: Props) {
           </div>
           <p className="text-sm leading-6 text-textSecondary">{activity.description}</p>
           <p className="text-sm text-textSecondary">
-            {new Date(activity.date).toLocaleDateString()} at {activity.timeLabel} • {activity.location}
+            {formatDateDDMMYYYY(activity.date)} at {activity.timeLabel} • {activity.location}
           </p>
           <p className="text-sm text-textSecondary">Duration: {activity.durationMinutes} minutes</p>
           <p className="text-sm text-textSecondary">

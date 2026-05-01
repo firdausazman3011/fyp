@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { fetchCsrfToken } from "@/lib/client-security";
 import { useToast } from "@/components/ui/ToastProvider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { formatDateDDMMYYYY } from "@/lib/date-format";
 
 type SuggestionItem = {
   id: string;
@@ -117,7 +118,7 @@ export function UserSuggestionList({ initialSuggestions }: { initialSuggestions:
             <p className="text-sm text-textSecondary">{suggestion.description}</p>
             <div className="mt-4 grid gap-1 text-sm text-textSecondary">
               <p>Suggested Location: {suggestion.location}</p>
-              <p>Suggested Date: {new Date(suggestion.date).toLocaleDateString()}</p>
+              <p>Suggested Date: {formatDateDDMMYYYY(suggestion.date)}</p>
             </div>
             {suggestion.adminRemark ? <p className="mt-1 text-xs text-textSecondary">Admin remark: {suggestion.adminRemark}</p> : null}
             {suggestion.status === "APPROVED" && suggestion.convertedAt && !suggestion.convertedToId ? (
