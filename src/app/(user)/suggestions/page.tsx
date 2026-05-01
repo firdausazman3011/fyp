@@ -30,6 +30,9 @@ export default async function SuggestionsPage() {
       status: suggestion.status,
       displayStatus,
       adminRemark: suggestion.adminRemark,
+      submittedAt: suggestion.submittedAt.toISOString(),
+      convertedAt: suggestion.convertedAt?.toISOString() ?? null,
+      convertedToId: suggestion.convertedToId,
       canModify: suggestion.status === "PENDING" && !isConverted,
     };
   });

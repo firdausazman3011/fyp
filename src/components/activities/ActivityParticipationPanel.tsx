@@ -80,22 +80,30 @@ export function ActivityParticipationPanel({
       <div className="flex flex-wrap gap-3">
         {isJoined ? (
           <>
-            <button
-              type="button"
-              onClick={() => setConfirmUnjoinOpen(true)}
-              disabled={pending}
-              className="rounded-full border border-primary px-5 py-2.5 text-sm font-semibold text-primary disabled:opacity-60"
-            >
-              {pending ? "Please wait..." : "Unjoin Activity"}
-            </button>
-            <button
-              type="button"
-              onClick={handleAttendance}
-              disabled={pending || hasAttendance || !canAttendNow || cancelled}
-              className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 disabled:cursor-not-allowed disabled:bg-primary/60"
-            >
-              {hasAttendance ? "Attendance Signed" : canAttendNow ? "Sign Attendance" : "Attendance During Event"}
-            </button>
+            {cancelled ? (
+              <p className="rounded-2xl bg-rose-50 px-3 py-2 text-sm text-statusRejected">
+                This activity has been cancelled by the admin.
+              </p>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setConfirmUnjoinOpen(true)}
+                  disabled={pending}
+                  className="rounded-full border border-primary px-5 py-2.5 text-sm font-semibold text-primary disabled:opacity-60"
+                >
+                  {pending ? "Please wait..." : "Unjoin Activity"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAttendance}
+                  disabled={pending || hasAttendance || !canAttendNow}
+                  className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 disabled:cursor-not-allowed disabled:bg-primary/60"
+                >
+                  {hasAttendance ? "Attendance Signed" : canAttendNow ? "Sign Attendance" : "Attendance During Event"}
+                </button>
+              </>
+            )}
           </>
         ) : (
           <button

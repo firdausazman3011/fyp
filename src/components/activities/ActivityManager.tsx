@@ -32,6 +32,7 @@ type ActivityManagerProps = {
   activities: ActivityItem[];
   initialEditId?: string | null;
   initialFocusId?: string | null;
+  sourceSuggestion?: { id: string; title: string; description: string; date: string; location: string } | null;
 };
 
 async function uploadImage(file: File) {
@@ -55,7 +56,7 @@ async function uploadImage(file: File) {
   return data.imageUrl;
 }
 
-export function ActivityManager({ activities, initialEditId = null, initialFocusId = null }: ActivityManagerProps) {
+export function ActivityManager({ activities, initialEditId = null, initialFocusId = null, sourceSuggestion = null }: ActivityManagerProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const [statusFilter, setStatusFilter] = useState<"ACTIVE" | "COMPLETED" | "CANCELLED">("ACTIVE");
@@ -65,7 +66,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
     description: "",
     date: "",
     time: "",
-    durationMinutes: 120,
+    durationMinutes: "120",
     participantLimit: 50,
     location: "",
     organizer: "",
@@ -112,6 +113,24 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
     });
   }, [initialFocusId]);
 
+  useEffect(() => {
+    if (!sourceSuggestion) return;
+    setEditingId(null);
+    setShowForm(true);
+    setForm({
+      title: sourceSuggestion.title,
+      description: sourceSuggestion.description,
+      date: sourceSuggestion.date.slice(0, 10),
+      time: "",
+      durationMinutes: "120",
+      participantLimit: 50,
+      location: sourceSuggestion.location,
+      organizer: "",
+      imageUrl: "",
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [sourceSuggestion]);
+
   function fillForm(activity: ActivityItem) {
     setEditingId(activity.id);
     setShowForm(true);
@@ -120,7 +139,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
       description: activity.description,
       date: activity.date.slice(0, 10),
       time: activity.timeLabel,
-      durationMinutes: activity.durationMinutes,
+      durationMinutes: String(activity.durationMinutes),
       participantLimit: activity.participantLimit,
       location: activity.location,
       organizer: activity.organizer,
@@ -136,13 +155,22 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
       description: "",
       date: "",
       time: "",
-      durationMinutes: 120,
+      durationMinutes: "120",
       participantLimit: 50,
       location: "",
       organizer: "",
       imageUrl: "",
     });
     setShowForm(false);
+  }
+
+  function closeForm() {
+    resetForm();
+    if (sourceSuggestion?.id) {
+      router.push(`/admin/suggestions?focus=${sourceSuggestion.id}`);
+      return;
+    }
+    router.replace("/admin/activities");
   }
 
   async function onFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -162,6 +190,23 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
+    const durationInput = formElement.elements.namedItem("durationMinutes") as HTMLInputElement | null;
+    const durationValue = Number(form.durationMinutes);
+    if (durationValue < 15) {
+      if (durationInput) {
+        durationInput.setCustomValidity("Value must be greater than or equal to 15.");
+        durationInput.reportValidity();
+      }
+      return;
+    }
+    if (durationInput) {
+      durationInput.setCustomValidity("");
+    }
+    if (!form.imageUrl.trim()) {
+      showToast("Please upload an activity image before saving.", "error");
+      return;
+    }
 
     const csrfToken = await fetchCsrfToken();
     if (!csrfToken) {
@@ -169,13 +214,26 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
       return;
     }
 
+    const submittedForm = {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      date: form.date,
+      time: form.time,
+      durationMinutes: durationValue,
+      participantLimit: Number(form.participantLimit),
+      location: form.location.trim(),
+      organizer: form.organizer.trim(),
+      imageUrl: form.imageUrl.trim(),
+    };
+
     const endpoint = editingId ? `/api/activities/${editingId}` : "/api/activities";
     const method = editingId ? "PATCH" : "POST";
     const response = await fetch(endpoint, {
       method,
       headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
       body: JSON.stringify({
-        ...form,
+        ...submittedForm,
+        sourceSuggestionId: !editingId ? sourceSuggestion?.id : undefined,
         status: editingId ? items.find((item) => item.id === editingId)?.status ?? "PUBLISHED" : "PUBLISHED",
       }),
     });
@@ -186,16 +244,29 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
       return;
     }
 
+    const normalizedActivity: ActivityItem = {
+      ...data.activity,
+      title: submittedForm.title,
+      description: submittedForm.description,
+      date: new Date(`${submittedForm.date}T${submittedForm.time}:00`).toISOString(),
+      timeLabel: submittedForm.time,
+      durationMinutes: submittedForm.durationMinutes,
+      participantLimit: submittedForm.participantLimit,
+      location: submittedForm.location,
+      organizer: submittedForm.organizer,
+      imageUrl: submittedForm.imageUrl,
+    };
+
     if (editingId) {
-      setItems((current) => current.map((item) => (item.id === data.activity?.id ? data.activity : item)));
+      setItems((current) => current.map((item) => (item.id === normalizedActivity.id ? normalizedActivity : item)));
       showToast("Activity updated successfully.", "success");
     } else {
-      setItems((current) => [data.activity!, ...current]);
+      setItems((current) => [normalizedActivity, ...current]);
       showToast("Activity created successfully.", "success");
     }
-
-    router.refresh();
     resetForm();
+    router.replace(`/admin/activities?focus=${data.activity.id}`);
+    router.refresh();
   }
 
   async function onDelete(id: string) {
@@ -217,9 +288,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
 
     setItems((current) => current.filter((item) => item.id !== id));
     showToast(data.message ?? "Activity deleted successfully.", "success");
-    if (editingId === id) {
-      resetForm();
-    }
+    resetForm();
     setDeleteId(null);
     router.refresh();
   }
@@ -293,11 +362,11 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
             </p>
           </div>
           {editingId ? (
-            <button type="button" onClick={resetForm} className="rounded-full border border-borderUi px-4 py-2 text-sm">
+            <button type="button" onClick={closeForm} className="rounded-full border border-borderUi px-4 py-2 text-sm">
               Cancel Edit
             </button>
           ) : (
-            <button type="button" onClick={() => setShowForm(false)} className="rounded-full border border-borderUi px-4 py-2 text-sm">
+            <button type="button" onClick={closeForm} className="rounded-full border border-borderUi px-4 py-2 text-sm">
               Close
             </button>
           )}
@@ -315,6 +384,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
               onChange={(e) => setForm({ ...form, organizer: e.target.value })}
               placeholder="Enter organizer name"
               className="w-full rounded-2xl border border-primary/20 bg-rose-50 px-4 py-3 text-sm font-medium text-textPrimary"
+              required
             />
           </div>
         </div>
@@ -334,11 +404,15 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
           <div className="space-y-2">
             <label className="text-sm font-medium text-textPrimary">Duration (Minutes):</label>
             <input
+              name="durationMinutes"
               value={form.durationMinutes}
-              onChange={(e) => setForm({ ...form, durationMinutes: Number(e.target.value) })}
-              type="number"
-              min={15}
-              step={15}
+              onChange={(e) => {
+                e.target.setCustomValidity("");
+                setForm({ ...form, durationMinutes: e.target.value.replace(/[^0-9]/g, "") });
+              }}
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="w-full rounded-2xl border border-primary/20 bg-rose-50 px-4 py-3 text-sm"
               required
             />
@@ -425,7 +499,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {activity.normalizedStatus !== "CANCELLED" ? (
+                {activity.normalizedStatus === "ACTIVE" ? (
                   <button type="button" onClick={() => fillForm(activity)} className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white">
                     Edit
                   </button>

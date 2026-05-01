@@ -117,7 +117,7 @@ const activitySchemaFields = {
   durationMinutes: z.coerce
     .number()
     .int("Duration must be a whole number of minutes.")
-    .min(15, "Duration must be at least 15 minutes.")
+    .min(15, "Value must be greater than or equal to 15.")
     .max(1440, "Duration must be 1440 minutes or fewer."),
   participantLimit: z.coerce
     .number()

@@ -45,7 +45,7 @@ export default async function UserHomePage() {
       </div>
       <div className="overflow-hidden rounded-3xl border-2 border-[#6b4f3a] bg-white shadow-lg">
         <div className="border-b border-primary/10 bg-rose-50 px-5 py-4">
-          <p className="text-lg font-semibold text-textPrimary">Latest Suggestion Status</p>
+          <p className="text-lg font-semibold text-textPrimary">Latest Suggestions</p>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-left text-sm">
@@ -92,7 +92,9 @@ export default async function UserHomePage() {
           </table>
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-3">
+        <h2 className="text-lg font-semibold text-textPrimary">Latest Activities</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
         {upcoming.map((activity) => (
           <Link key={activity.id} href={`/activities?focus=${activity.id}`} className="block">
           <article className="overflow-hidden rounded-3xl border-2 border-[#6b4f3a] bg-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg">
@@ -120,6 +122,7 @@ export default async function UserHomePage() {
           </article>
           </Link>
         ))}
+        </div>
       </div>
       {upcoming.length === 0 ? (
         <p className="rounded-2xl border-2 border-[#6b4f3a] bg-white p-4 text-sm text-textSecondary shadow-sm">

@@ -4,9 +4,15 @@ import { ActivityManager } from "@/components/activities/ActivityManager";
 export default async function ManageActivitiesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string; focus?: string }>;
+  searchParams: Promise<{ edit?: string; focus?: string; fromSuggestion?: string }>;
 }) {
   const params = await searchParams;
+  const sourceSuggestion = params.fromSuggestion
+    ? await prisma.suggestion.findUnique({
+        where: { id: params.fromSuggestion },
+        include: { convertedTo: { select: { id: true } } },
+      })
+    : null;
   const activities = await prisma.activity.findMany({
     orderBy: { date: "asc" },
     include: {
@@ -35,6 +41,17 @@ export default async function ManageActivitiesPage({
       <ActivityManager
         initialEditId={params.edit ?? null}
         initialFocusId={params.focus ?? null}
+        sourceSuggestion={
+          sourceSuggestion && sourceSuggestion.status === "APPROVED" && !sourceSuggestion.convertedTo && !sourceSuggestion.convertedAt
+            ? {
+                id: sourceSuggestion.id,
+                title: sourceSuggestion.title,
+                description: sourceSuggestion.description,
+                date: sourceSuggestion.date.toISOString(),
+                location: sourceSuggestion.location,
+              }
+            : null
+        }
         activities={activities.map((activity) => ({
           id: activity.id,
           title: activity.title,

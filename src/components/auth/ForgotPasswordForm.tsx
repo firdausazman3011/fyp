@@ -12,6 +12,7 @@ export function ForgotPasswordForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -37,9 +38,12 @@ export function ForgotPasswordForm() {
       return;
     }
 
-    setSuccess(data.message ?? "If the account exists, a reset link has been sent.");
-    router.push("/login");
-    router.refresh();
+    setSuccess("Password reset link sent. Please check your email.");
+    setRedirecting(true);
+    setTimeout(() => {
+      router.push("/login");
+      router.refresh();
+    }, 1500);
   }
 
   return (
@@ -57,7 +61,7 @@ export function ForgotPasswordForm() {
       {error ? <p className="rounded-lg bg-rose-50 p-2 text-sm text-statusRejected">{error}</p> : null}
       {success ? <p className="rounded-lg bg-emerald-50 p-2 text-sm text-emerald-700">{success}</p> : null}
 
-      <SubmitButton label="Send reset link" pendingLabel="Sending..." />
+      <SubmitButton label={redirecting ? "Redirecting..." : "Send reset link"} pendingLabel="Sending..." />
 
       <p className="text-center text-sm text-textSecondary">
         Back to <Link href="/login" className="text-primary hover:opacity-90">Login</Link>

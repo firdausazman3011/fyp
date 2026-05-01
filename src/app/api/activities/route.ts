@@ -5,7 +5,6 @@ import { createActivitySchema, parseFutureDateTime, toZodErrorMessage } from "@/
 import { requireAuth, requireRole } from "@/lib/authorization";
 import { sanitizeText, validateCsrfOrThrow } from "@/lib/security";
 import { logAdminAction } from "@/lib/audit";
-import { DEFAULT_ACTIVITY_ORGANIZER } from "@/lib/constants";
 import { rangesOverlap } from "@/lib/activity-time";
 
 export async function GET() {
@@ -36,6 +35,10 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const parsed = createActivitySchema.parse(body);
+    const sourceSuggestionId =
+      typeof body.sourceSuggestionId === "string" && body.sourceSuggestionId.trim().length > 0
+        ? body.sourceSuggestionId.trim()
+        : null;
     const date = parseFutureDateTime(parsed.date, parsed.time);
     if (!date) {
       return NextResponse.json({ error: "Invalid date/time." }, { status: 400 });
@@ -71,12 +74,33 @@ export async function POST(request: Request) {
         durationMinutes: parsed.durationMinutes,
         participantLimit: parsed.participantLimit,
         location: sanitizeText(parsed.location),
-        organizer: sanitizeText(parsed.organizer || DEFAULT_ACTIVITY_ORGANIZER),
+        organizer: sanitizeText(parsed.organizer),
         imageUrl: parsed.imageUrl.trim(),
         status: parsed.status,
         createdByAdminId: user.userId,
       },
     });
+
+    if (sourceSuggestionId) {
+      const sourceSuggestion = await prisma.suggestion.findUnique({ where: { id: sourceSuggestionId } });
+      if (
+        !sourceSuggestion
+        || sourceSuggestion.status !== "APPROVED"
+        || sourceSuggestion.convertedToId
+        || sourceSuggestion.convertedAt
+      ) {
+        await prisma.activity.delete({ where: { id: activity.id } });
+        return NextResponse.json({ error: "Suggestion is not available for conversion." }, { status: 400 });
+      }
+      await prisma.suggestion.update({
+        where: { id: sourceSuggestionId },
+        data: {
+          convertedAt: new Date(),
+          convertedById: user.userId,
+          convertedToId: activity.id,
+        },
+      });
+    }
 
     await logAdminAction(user.userId, "CREATE_ACTIVITY", "activity", activity.id);
     return NextResponse.json(

@@ -61,7 +61,7 @@ export function SuggestionForm() {
         <input name="date" type="date" className="w-full rounded-xl border border-primary/20 bg-rose-50 px-3 py-2 text-sm" required />
       </div>
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-textPrimary">Location:</label>
+        <label className="block text-sm font-medium text-textPrimary">Suggested Location:</label>
         <input name="location" placeholder="Enter location" className="w-full rounded-xl border border-primary/20 bg-rose-50 px-3 py-2 text-sm" required />
       </div>
       <div className="flex flex-wrap gap-2">

@@ -4,7 +4,6 @@ import { requireRole } from "@/lib/authorization";
 import { logAdminAction } from "@/lib/audit";
 import { sanitizeText, validateCsrfOrThrow } from "@/lib/security";
 import { parseFutureDateTime, toZodErrorMessage, updateActivitySchema } from "@/lib/validation";
-import { DEFAULT_ACTIVITY_ORGANIZER } from "@/lib/constants";
 import { ActivityStatus } from "@prisma/client";
 import { rangesOverlap } from "@/lib/activity-time";
 
@@ -69,7 +68,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         durationMinutes: parsed.durationMinutes,
         participantLimit: parsed.participantLimit,
         location: sanitizeText(parsed.location),
-        organizer: sanitizeText(parsed.organizer || DEFAULT_ACTIVITY_ORGANIZER),
+        organizer: sanitizeText(parsed.organizer),
         imageUrl: parsed.imageUrl.trim(),
         status: parsed.status,
       },

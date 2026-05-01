@@ -23,7 +23,8 @@ export default async function ReviewSuggestionsPage() {
       <SuggestionFilterList
         suggestions={suggestions.map((suggestion) => ({
           ...suggestion,
-          displayStatus: suggestion.convertedToId ? "CONVERTED" : suggestion.status,
+          displayStatus: suggestion.convertedAt ? "CONVERTED" : suggestion.status,
+          convertedDeleted: Boolean(suggestion.convertedAt && !suggestion.convertedToId),
         }))}
         statusClass={statusClass}
       />

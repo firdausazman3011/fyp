@@ -125,11 +125,13 @@ export function AppShell({ role, name, email, profilePicture, children }: AppShe
                 </Link>
               ))}
             </nav>
-            <div className="mt-6 border-t border-white/20 pt-4">
-              <a href={`mailto:${supportEmail}`} className="block rounded-xl border border-white/30 px-3 py-2 text-sm font-medium hover:bg-black">
-                Help Center
-              </a>
-            </div>
+            {role === "USER" ? (
+              <div className="mt-6 border-t border-white/20 pt-4">
+                <a href={`mailto:${supportEmail}`} className="block rounded-xl border border-white/30 px-3 py-2 text-sm font-medium hover:bg-black">
+                  Help Center
+                </a>
+              </div>
+            ) : null}
           </aside>
         </div>
       ) : null}
@@ -142,26 +144,23 @@ export function AppShell({ role, name, email, profilePicture, children }: AppShe
             </Link>
           ))}
         </nav>
-        <div className="absolute bottom-4 left-4 right-4 border-t border-white/20 pt-4">
-          <a href={`mailto:${supportEmail}`} className="block rounded-xl border border-white/30 px-3 py-2 text-sm font-medium hover:bg-black">
-            Help Center
-          </a>
-        </div>
+        {role === "USER" ? (
+          <div className="absolute bottom-4 left-4 right-4 border-t border-white/20 pt-4">
+            <a href={`mailto:${supportEmail}`} className="block rounded-xl border border-white/30 px-3 py-2 text-sm font-medium hover:bg-black">
+              Help Center
+            </a>
+          </div>
+        ) : null}
       </aside>
 
-      <div className="flex-1 pt-16 md:ml-64">
+      <div className="flex-1 pb-24 pt-16 md:ml-64">
         <main className="p-3 sm:p-5 md:p-6">
           {children}
         </main>
       </div>
 
-      <footer className="mt-auto bg-sidebar py-6 text-center text-sm text-white md:ml-64">
-        <p className="font-semibold">UniConnect</p>
-        <p>Community Monitoring and Support Platform</p>
-        <p className="mt-1">
-          Contact us: <a href={`mailto:${supportEmail}`} className="underline">{supportEmail}</a>
-        </p>
-        <p className="mt-1">&copy; {new Date().getFullYear()} UniConnect</p>
+      <footer className="fixed bottom-0 left-0 right-0 z-20 bg-sidebar py-4 text-center text-sm text-white md:left-64">
+        <p>&copy; 2026 UniConnect · Community Monitoring and Support Platform</p>
       </footer>
     </div>
   );

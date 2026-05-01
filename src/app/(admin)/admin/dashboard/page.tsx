@@ -17,7 +17,7 @@ export default async function AdminDashboardPage() {
       include: { participants: true },
     }),
     prisma.suggestion.findMany({
-      select: { status: true, convertedToId: true },
+      select: { status: true, convertedToId: true, convertedAt: true },
     }),
     prisma.activity.findMany({
       select: { status: true, date: true, timeLabel: true, durationMinutes: true },
@@ -27,10 +27,10 @@ export default async function AdminDashboardPage() {
     .filter((item) => item.status !== "CANCELLED" && !isActivityCompleted(item.date, item.timeLabel, item.durationMinutes))
     .slice(0, 4);
   const suggestionSummary = {
-    approved: suggestionCounts.filter((item) => item.status === SuggestionStatus.APPROVED && !item.convertedToId).length,
-    pending: suggestionCounts.filter((item) => item.status === SuggestionStatus.PENDING && !item.convertedToId).length,
-    rejected: suggestionCounts.filter((item) => item.status === SuggestionStatus.REJECTED && !item.convertedToId).length,
-    converted: suggestionCounts.filter((item) => Boolean(item.convertedToId)).length,
+    approved: suggestionCounts.filter((item) => item.status === SuggestionStatus.APPROVED && !item.convertedAt).length,
+    pending: suggestionCounts.filter((item) => item.status === SuggestionStatus.PENDING && !item.convertedAt).length,
+    rejected: suggestionCounts.filter((item) => item.status === SuggestionStatus.REJECTED && !item.convertedAt).length,
+    converted: suggestionCounts.filter((item) => Boolean(item.convertedAt)).length,
   };
   const activitySummary = {
     active: allActivities.filter((item) => item.status !== "CANCELLED" && !isActivityCompleted(item.date, item.timeLabel, item.durationMinutes)).length,
@@ -43,27 +43,53 @@ export default async function AdminDashboardPage() {
       <h1 className="text-2xl font-semibold">Dashboard</h1>
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-3xl border-2 border-[#6b4f3a] bg-white p-5 text-center shadow-sm">
-          <h2 className="text-xl font-semibold text-textPrimary">Activities Overview</h2>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold">
-            <span className="rounded-full bg-lime-100 px-3 py-1 text-green-700">Active: {activitySummary.active}</span>
-            <span className="rounded-full bg-slate-200 px-3 py-1 text-slate-700">Completed: {activitySummary.completed}</span>
-            <span className="rounded-full bg-rose-100 px-3 py-1 text-statusRejected">Cancelled: {activitySummary.cancelled}</span>
+          <h2 className="text-xl font-semibold text-textPrimary">Activity Overview</h2>
+          <div className="mt-4 flex items-center justify-center">
+            <div className="px-6">
+              <p className="text-2xl font-semibold text-green-700">{activitySummary.active}</p>
+              <p className="text-xs font-semibold text-green-700">Active</p>
+            </div>
+            <div className="h-10 w-px bg-borderUi" />
+            <div className="px-6">
+              <p className="text-2xl font-semibold text-slate-700">{activitySummary.completed}</p>
+              <p className="text-xs font-semibold text-slate-700">Completed</p>
+            </div>
+            <div className="h-10 w-px bg-borderUi" />
+            <div className="px-6">
+              <p className="text-2xl font-semibold text-statusRejected">{activitySummary.cancelled}</p>
+              <p className="text-xs font-semibold text-statusRejected">Cancelled</p>
+            </div>
           </div>
         </div>
         <div className="rounded-3xl border-2 border-[#6b4f3a] bg-white p-5 text-center shadow-sm">
-          <h2 className="text-xl font-semibold text-textPrimary">Suggestions Overview</h2>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold">
-            <span className="rounded-full bg-statusApproved px-3 py-1 text-textPrimary">Approved: {suggestionSummary.approved}</span>
-            <span className="rounded-full bg-statusPending px-3 py-1 text-textPrimary">Pending: {suggestionSummary.pending}</span>
-            <span className="rounded-full bg-statusRejected px-3 py-1 text-white">Rejected: {suggestionSummary.rejected}</span>
-            <span className="rounded-full bg-blue-100 px-3 py-1 text-blue-700">Converted: {suggestionSummary.converted}</span>
+          <h2 className="text-xl font-semibold text-textPrimary">Suggestion Overview</h2>
+          <div className="mt-4 flex items-center justify-center">
+            <div className="px-5">
+              <p className="text-2xl font-semibold text-green-700">{suggestionSummary.approved}</p>
+              <p className="text-xs font-semibold text-green-700">Approved</p>
+            </div>
+            <div className="h-10 w-px bg-borderUi" />
+            <div className="px-5">
+              <p className="text-2xl font-semibold text-amber-600">{suggestionSummary.pending}</p>
+              <p className="text-xs font-semibold text-amber-600">Pending</p>
+            </div>
+            <div className="h-10 w-px bg-borderUi" />
+            <div className="px-5">
+              <p className="text-2xl font-semibold text-statusRejected">{suggestionSummary.rejected}</p>
+              <p className="text-xs font-semibold text-statusRejected">Rejected</p>
+            </div>
+            <div className="h-10 w-px bg-borderUi" />
+            <div className="px-5">
+              <p className="text-2xl font-semibold text-blue-700">{suggestionSummary.converted}</p>
+              <p className="text-xs font-semibold text-blue-700">Converted</p>
+            </div>
           </div>
         </div>
       </div>
       <div className="space-y-4">
         <div className="overflow-hidden rounded-3xl border-2 border-[#6b4f3a] bg-white shadow-sm">
           <div className="border-b border-primary/10 bg-rose-50 px-5 py-4">
-            <p className="text-lg font-semibold text-textPrimary">Latest Suggestion Status</p>
+            <p className="text-lg font-semibold text-textPrimary">Latest Suggestions</p>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
@@ -85,7 +111,7 @@ export default async function AdminDashboardPage() {
                     <td className="px-5 py-3 text-textSecondary">{item.location}</td>
                     <td className="px-5 py-3">
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        item.convertedTo
+                        item.convertedAt
                           ? "bg-blue-100 text-blue-700"
                           : item.status === "APPROVED"
                             ? "bg-statusApproved text-textPrimary"
@@ -93,7 +119,7 @@ export default async function AdminDashboardPage() {
                               ? "bg-statusPending text-textPrimary"
                               : "bg-statusRejected text-white"
                       }`}>
-                        {item.convertedTo ? "CONVERTED" : item.status}
+                        {item.convertedAt ? (item.convertedTo ? "CONVERTED" : "CONVERTED (DELETED)") : item.status}
                       </span>
                     </td>
                   </tr>
@@ -104,7 +130,7 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-textPrimary">Recently Added Activities (Card)</h2>
+        <h2 className="text-lg font-semibold text-textPrimary">Latest Activities</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {latestActivities.map((item) => (
             <Link key={item.id} href={`/admin/activities?focus=${item.id}`} className="block">
@@ -117,6 +143,7 @@ export default async function AdminDashboardPage() {
                     <h2 className="font-semibold text-textPrimary">{item.title}</h2>
                     <span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-semibold text-green-700">Active</span>
                   </div>
+                  <p className="mt-1 text-sm text-textSecondary">{item.description}</p>
                   <p className="mt-3 text-xs text-textSecondary">
                     {new Date(item.date).toLocaleDateString()} • {item.location} • {item.participants.length} participants
                   </p>

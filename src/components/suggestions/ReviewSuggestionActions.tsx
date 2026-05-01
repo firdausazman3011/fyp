@@ -16,7 +16,6 @@ export function ReviewSuggestionActions({ suggestionId, status, converted }: Pro
   const router = useRouter();
   const { showToast } = useToast();
   const [currentStatus, setCurrentStatus] = useState(status);
-  const [isConverted, setIsConverted] = useState(converted);
   const [pending, setPending] = useState(false);
   const [confirmRejectOpen, setConfirmRejectOpen] = useState(false);
 
@@ -46,58 +45,42 @@ export function ReviewSuggestionActions({ suggestionId, status, converted }: Pro
   }
 
   async function convert() {
-    const csrfToken = await fetchCsrfToken();
-    if (!csrfToken) {
-      showToast("Unable to convert suggestion.", "error");
-      return;
-    }
-    setPending(true);
-    const response = await fetch(`/api/suggestions/${suggestionId}/convert`, {
-      method: "POST",
-      headers: { "x-csrf-token": csrfToken },
-    });
-    const data = (await response.json()) as { message?: string; error?: string; activity?: { id: string } };
-    setPending(false);
-    if (!response.ok) {
-      showToast(data.error ?? "Unable to convert suggestion.", "error");
-      return;
-    }
-    setIsConverted(true);
-    showToast(data.message ?? "Suggestion converted.", "success");
-    if (data.activity?.id) {
-      router.push(`/admin/activities?edit=${data.activity.id}`);
-    } else {
-      router.refresh();
-    }
+    router.push(`/admin/activities?fromSuggestion=${suggestionId}`);
   }
 
   return (
     <>
       <div className="mt-3 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => review("APPROVED")}
-          disabled={pending || currentStatus !== "PENDING"}
-          className="w-full rounded-full bg-secondary px-4 py-2 text-sm font-medium text-textPrimary disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-        >
-          Approve
-        </button>
-        <button
-          type="button"
-          onClick={() => setConfirmRejectOpen(true)}
-          disabled={pending || currentStatus !== "PENDING"}
-          className="w-full rounded-full bg-statusRejected px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-        >
-          Reject
-        </button>
-        <button
-          type="button"
-          onClick={convert}
-          disabled={pending || currentStatus !== "APPROVED" || isConverted}
-          className="w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-        >
-          {isConverted ? "Converted" : "Convert"}
-        </button>
+        {currentStatus === "PENDING" ? (
+          <>
+            <button
+              type="button"
+              onClick={() => review("APPROVED")}
+              disabled={pending}
+              className="w-full rounded-full bg-secondary px-4 py-2 text-sm font-medium text-textPrimary disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            >
+              Approve
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmRejectOpen(true)}
+              disabled={pending}
+              className="w-full rounded-full bg-statusRejected px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+            >
+              Reject
+            </button>
+          </>
+        ) : null}
+        {currentStatus === "APPROVED" && !converted ? (
+          <button
+            type="button"
+            onClick={convert}
+            disabled={pending}
+            className="w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+          >
+            Convert
+          </button>
+        ) : null}
       </div>
       <ConfirmDialog
         open={confirmRejectOpen}

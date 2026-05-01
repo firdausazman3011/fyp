@@ -5,12 +5,7 @@ import { NextResponse } from "next/server";
 const CSRF_COOKIE_NAME = "uniconnect_csrf";
 
 export function sanitizeText(input: string) {
-  return input
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+  return input.trim();
 }
 
 export async function ensureCsrfCookie() {

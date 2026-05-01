@@ -15,6 +15,8 @@ type SuggestionItem = {
   displayStatus: "PENDING" | "APPROVED" | "REJECTED" | "CONVERTED";
   submittedBy: { name: string; email: string };
   convertedToId: string | null;
+  convertedAt?: Date | string | null;
+  convertedDeleted?: boolean;
 };
 
 type Props = {
@@ -62,19 +64,21 @@ export function SuggestionFilterList({ suggestions, statusClass }: Props) {
           <article id={`admin-suggestion-${suggestion.id}`} key={suggestion.id} className="rounded-3xl border-2 border-[#6b4f3a] bg-cardBg p-5 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <p className="text-xl font-semibold text-textPrimary">{suggestion.title}</p>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass[suggestion.displayStatus]}`}>{suggestion.displayStatus}</span>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass[suggestion.displayStatus]}`}>
+                {suggestion.convertedDeleted ? "CONVERTED (DELETED)" : suggestion.displayStatus}
+              </span>
             </div>
             <p className="mt-2 text-sm text-textSecondary">{suggestion.description}</p>
             <div className="mt-4 grid gap-1 text-sm text-textSecondary">
-              <p>By: {suggestion.submittedBy.name} ({suggestion.submittedBy.email})</p>
-              <p>Submitted: {new Date(suggestion.submittedAt).toLocaleString()}</p>
-              <p>Location: {suggestion.location}</p>
+              <p>Submitted By: {suggestion.submittedBy.name} ({suggestion.submittedBy.email})</p>
+              <p>Submitted On: {new Date(suggestion.submittedAt).toLocaleString()}</p>
+              <p>Suggested Location: {suggestion.location}</p>
               <p>Suggested Date: {new Date(suggestion.date).toLocaleDateString()}</p>
             </div>
             <ReviewSuggestionActions
               suggestionId={suggestion.id}
               status={suggestion.status}
-              converted={Boolean(suggestion.convertedToId)}
+              converted={Boolean(suggestion.convertedToId || suggestion.convertedAt)}
             />
           </article>
         ))}

@@ -15,6 +15,9 @@ type SuggestionItem = {
   status: string;
   displayStatus: "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
   adminRemark: string | null;
+  submittedAt: string;
+  convertedAt: string | null;
+  convertedToId: string | null;
   canModify: boolean;
 };
 
@@ -105,32 +108,41 @@ export function UserSuggestionList({ initialSuggestions }: { initialSuggestions:
       <div className="grid gap-4 xl:grid-cols-2">
         {filteredSuggestions.map((suggestion) => (
           <article id={`suggestion-${suggestion.id}`} key={suggestion.id} className="rounded-3xl border-2 border-[#6b4f3a] bg-cardBg p-5 shadow-sm">
-            <p className="font-semibold">{suggestion.title}</p>
-            <p className="text-sm text-textSecondary">{suggestion.description}</p>
-            <div className="mt-2">
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-xl font-semibold text-textPrimary">{suggestion.title}</p>
               <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass[suggestion.displayStatus]}`}>
                 {suggestion.displayStatus}
               </span>
             </div>
-            {suggestion.adminRemark ? <p className="mt-1 text-xs text-textSecondary">Admin remark: {suggestion.adminRemark}</p> : null}
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                disabled={!suggestion.canModify}
-                onClick={() => setEditing(suggestion)}
-                className="rounded-full bg-black px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                disabled={!suggestion.canModify}
-                onClick={() => setDeleteId(suggestion.id)}
-                className="rounded-full border border-black px-4 py-1.5 text-xs font-semibold text-black disabled:opacity-50"
-              >
-                Delete
-              </button>
+            <p className="text-sm text-textSecondary">{suggestion.description}</p>
+            <div className="mt-4 grid gap-1 text-sm text-textSecondary">
+              <p>Suggested Location: {suggestion.location}</p>
+              <p>Suggested Date: {new Date(suggestion.date).toLocaleDateString()}</p>
             </div>
+            {suggestion.adminRemark ? <p className="mt-1 text-xs text-textSecondary">Admin remark: {suggestion.adminRemark}</p> : null}
+            {suggestion.status === "APPROVED" && suggestion.convertedAt && !suggestion.convertedToId ? (
+              <p className="mt-2 text-xs text-amber-700">
+                ⚠️ This activity was approved and created but later removed due to a lack of participant registration.
+              </p>
+            ) : null}
+            {suggestion.canModify ? (
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditing(suggestion)}
+                  className="rounded-full bg-black px-4 py-1.5 text-xs font-semibold text-white"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteId(suggestion.id)}
+                  className="rounded-full border border-black px-4 py-1.5 text-xs font-semibold text-black"
+                >
+                  Delete
+                </button>
+              </div>
+            ) : null}
           </article>
         ))}
       </div>
@@ -150,7 +162,7 @@ export function UserSuggestionList({ initialSuggestions }: { initialSuggestions:
             <textarea name="description" defaultValue={editing.description} rows={4} className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
             <label className="text-sm font-medium text-textPrimary">Suggested Date:</label>
             <input name="date" type="date" defaultValue={editing.date.slice(0, 10)} className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
-            <label className="text-sm font-medium text-textPrimary">Location:</label>
+            <label className="text-sm font-medium text-textPrimary">Suggested Location:</label>
             <input name="location" defaultValue={editing.location} className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
             <div className="flex gap-2">
               <button type="submit" className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white">Save</button>
