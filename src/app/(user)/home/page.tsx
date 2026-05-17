@@ -4,6 +4,9 @@ import { getCurrentAuthUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AppImage } from "@/components/ui/AppImage";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export default async function UserHomePage() {
   const authUser = await getCurrentAuthUser();
@@ -29,106 +32,108 @@ export default async function UserHomePage() {
     }),
   ]);
 
-  const statusClass: Record<SuggestionStatus | "CANCELLED", string> = {
-    PENDING: "bg-statusPending text-textPrimary",
-    APPROVED: "bg-statusApproved text-textPrimary",
-    REJECTED: "bg-statusRejected text-white",
-    CANCELLED: "bg-rose-100 text-statusRejected",
+  const statusBadgeClass: Record<SuggestionStatus | "CANCELLED", string> = {
+    PENDING: "border-transparent bg-amber-500/15 text-amber-800",
+    APPROVED: "border-transparent bg-emerald-500/15 text-emerald-800",
+    REJECTED: "border-transparent bg-destructive/15 text-destructive",
+    CANCELLED: "border-transparent bg-destructive/10 text-destructive",
   };
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold text-textPrimary">Home</h1>
-        <p className="mt-2 text-sm text-textSecondary">
+        <h1 className="text-3xl font-semibold tracking-tight">Home</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
           Rule enforced: home shows upcoming activities plus a neat suggestion-status summary table.
         </p>
       </div>
-      <div className="overflow-hidden rounded-3xl border-2 border-[#6b4f3a] bg-white shadow-lg">
-        <div className="border-b border-primary/10 bg-rose-50 px-5 py-4">
-          <p className="text-lg font-semibold text-textPrimary">Latest Suggestions</p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-mainBg text-textSecondary">
-              <tr>
-                <th className="px-5 py-3 font-medium">Title</th>
-                <th className="px-5 py-3 font-medium">Suggested Date</th>
-                <th className="px-5 py-3 font-medium">Location</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {suggestions.length > 0 ? (
-                suggestions.map((suggestion) => (
-                  (() => {
+      <Card className="overflow-hidden shadow-sm">
+        <CardHeader className="border-b bg-muted/40 py-4">
+          <CardTitle className="text-lg">Latest Suggestions</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="border-b bg-muted/30 text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 font-medium sm:px-6">Title</th>
+                  <th className="px-4 py-3 font-medium sm:px-6">Suggested Date</th>
+                  <th className="px-4 py-3 font-medium sm:px-6">Location</th>
+                  <th className="px-4 py-3 font-medium sm:px-6">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {suggestions.length > 0 ? (
+                  suggestions.map((suggestion) => {
                     const displayStatus =
                       suggestion.convertedTo?.status === "CANCELLED" ? "CANCELLED" : suggestion.status;
                     return (
-                  <tr key={suggestion.id} className="border-t border-borderUi">
-                    <td className="px-5 py-3 font-medium text-textPrimary">
-                      <Link href={`/suggestions?focus=${suggestion.id}`} className="underline-offset-2 hover:underline">
-                        {suggestion.title}
-                      </Link>
-                    </td>
-                    <td className="px-5 py-3 text-textSecondary">{formatDateDDMMYYYY(suggestion.date)}</td>
-                    <td className="px-5 py-3 text-textSecondary">{suggestion.location}</td>
-                    <td className="px-5 py-3">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass[displayStatus]}`}>
-                        {displayStatus}
-                      </span>
+                      <tr key={suggestion.id} className="border-b border-border last:border-0">
+                        <td className="px-4 py-3 font-medium sm:px-6">
+                          <Link
+                            href={`/suggestions?focus=${suggestion.id}`}
+                            className="text-primary underline-offset-4 hover:underline"
+                          >
+                            {suggestion.title}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground sm:px-6">{formatDateDDMMYYYY(suggestion.date)}</td>
+                        <td className="px-4 py-3 text-muted-foreground sm:px-6">{suggestion.location}</td>
+                        <td className="px-4 py-3 sm:px-6">
+                          <span
+                            className={cn(
+                              "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold",
+                              statusBadgeClass[displayStatus],
+                            )}
+                          >
+                            {displayStatus}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td className="px-4 py-6 text-muted-foreground sm:px-6" colSpan={4}>
+                      No suggestions submitted yet.
                     </td>
                   </tr>
-                    );
-                  })()
-                ))
-              ) : (
-                <tr>
-                  <td className="px-5 py-4 text-textSecondary" colSpan={4}>
-                    No suggestions submitted yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-textPrimary">Latest Activities</h2>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold tracking-tight">Latest Activities</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-        {upcoming.map((activity) => (
-          <Link key={activity.id} href={`/activities?focus=${activity.id}`} className="block">
-          <article className="overflow-hidden rounded-3xl border-2 border-[#6b4f3a] bg-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg">
-            <div className="h-44 w-full bg-mainBg">
-              <AppImage src={activity.imageUrl} alt={activity.title} className="h-full w-full object-cover" />
-            </div>
-            <div className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <h2 className="font-semibold text-textPrimary">{activity.title}</h2>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    activity.status === "CANCELLED"
-                      ? "bg-rose-100 text-statusRejected"
-                      : "bg-lime-100 text-green-700"
-                  }`}
-                >
-                  {activity.status === "CANCELLED" ? "Cancelled" : "Active"}
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-textSecondary">{activity.description}</p>
-              <p className="mt-3 text-xs text-textSecondary">
-                {formatDateDDMMYYYY(activity.date)} • {activity.location} • {activity.participants.length} participants
-              </p>
-            </div>
-          </article>
-          </Link>
-        ))}
+          {upcoming.map((activity) => (
+            <Link key={activity.id} href={`/activities?focus=${activity.id}`} className="group block">
+              <Card className="h-full overflow-hidden transition-shadow hover:shadow-md">
+                <div className="aspect-video w-full overflow-hidden bg-muted">
+                  <AppImage src={activity.imageUrl} alt={activity.title} className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
+                </div>
+                <CardHeader className="space-y-2 pb-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <CardTitle className="text-base leading-snug">{activity.title}</CardTitle>
+                    <Badge variant={activity.status === "CANCELLED" ? "destructive" : "success"} className="shrink-0">
+                      {activity.status === "CANCELLED" ? "Cancelled" : "Active"}
+                    </Badge>
+                  </div>
+                  <p className="line-clamp-2 text-sm text-muted-foreground">{activity.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDateDDMMYYYY(activity.date)} · {activity.location} · {activity.participants.length} participants
+                  </p>
+                </CardHeader>
+              </Card>
+            </Link>
+          ))}
         </div>
       </div>
       {upcoming.length === 0 ? (
-        <p className="rounded-2xl border-2 border-[#6b4f3a] bg-white p-4 text-sm text-textSecondary shadow-sm">
-          No activities available at the moment. Stay tuned for upcoming events.
-        </p>
+        <Card className="border-dashed bg-muted/20 p-6 shadow-none">
+          <p className="text-sm text-muted-foreground">No activities available at the moment. Stay tuned for upcoming events.</p>
+        </Card>
       ) : null}
     </section>
   );

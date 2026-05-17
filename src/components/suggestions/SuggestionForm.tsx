@@ -4,6 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { fetchCsrfToken } from "@/lib/client-security";
 import { useToast } from "@/components/ui/ToastProvider";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function SuggestionForm() {
   const router = useRouter();
@@ -41,35 +46,44 @@ export function SuggestionForm() {
   return (
     <div className="space-y-4">
       {!showForm ? (
-        <button type="button" onClick={() => setShowForm(true)} className="rounded-full bg-black px-5 py-2.5 text-sm font-semibold text-white shadow-lg">
+        <Button type="button" onClick={() => setShowForm(true)}>
           Add New Activity Suggestion
-        </button>
+        </Button>
       ) : null}
       {showForm ? (
-    <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/45 p-4">
-    <form action={onSubmit} className="w-full max-w-2xl space-y-4 rounded-3xl border-2 border-[#6b4f3a] bg-cardBg p-5">
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-textPrimary">Title:</label>
-        <input name="title" placeholder="Title (5-100 chars)" className="w-full rounded-xl border border-primary/20 bg-rose-50 px-3 py-2 text-sm" required />
-      </div>
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-textPrimary">Description:</label>
-        <textarea name="description" placeholder="Description (20-1000 chars)" className="w-full rounded-xl border border-primary/20 bg-rose-50 px-3 py-2 text-sm" rows={4} required />
-      </div>
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-textPrimary">Suggested Date:</label>
-        <input name="date" type="date" className="w-full rounded-xl border border-primary/20 bg-rose-50 px-3 py-2 text-sm" required />
-      </div>
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-textPrimary">Suggested Location:</label>
-        <input name="location" placeholder="Enter location" className="w-full rounded-xl border border-primary/20 bg-rose-50 px-3 py-2 text-sm" required />
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <button type="submit" className="rounded-full bg-black px-5 py-2.5 text-sm font-semibold text-white shadow-lg">Submit Suggestion</button>
-        <button type="button" onClick={() => setShowForm(false)} className="rounded-full border border-black px-5 py-2.5 text-sm font-semibold text-black">Close</button>
-      </div>
-    </form>
-    </div>
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
+          <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto shadow-lg">
+            <CardHeader>
+              <CardTitle>New suggestion</CardTitle>
+            </CardHeader>
+            <form action={onSubmit}>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="suggestion-title">Title</Label>
+                  <Input id="suggestion-title" name="title" placeholder="Title (5-100 chars)" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="suggestion-description">Description</Label>
+                  <Textarea id="suggestion-description" name="description" placeholder="Description (20-1000 chars)" rows={4} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="suggestion-date">Suggested Date</Label>
+                  <Input id="suggestion-date" name="date" type="date" required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="suggestion-location">Suggested Location</Label>
+                  <Input id="suggestion-location" name="location" placeholder="Enter location" required />
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-wrap justify-end gap-2 border-t bg-muted/30">
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
+                  Close
+                </Button>
+                <Button type="submit">Submit Suggestion</Button>
+              </CardFooter>
+            </form>
+          </Card>
+        </div>
       ) : null}
     </div>
   );

@@ -34,9 +34,10 @@ export default async function ManageActivitiesPage({
   });
 
   return (
-    <section className="space-y-6">
+    <section className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold text-textPrimary">Manage Activities</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Manage Activities</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Create, edit, and monitor community activities.</p>
       </div>
       <ActivityManager
         initialEditId={params.edit ?? null}

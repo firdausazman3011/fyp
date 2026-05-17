@@ -38,8 +38,11 @@ export default async function SuggestionsPage() {
   });
 
   return (
-    <section className="space-y-6">
-      <h1 className="text-2xl font-semibold">Activity Suggestion</h1>
+    <section className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-semibold tracking-tight">Activity Suggestion</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Propose activities for the community team to review.</p>
+      </div>
       <SuggestionForm />
       <UserSuggestionList initialSuggestions={mappedSuggestions} />
     </section>

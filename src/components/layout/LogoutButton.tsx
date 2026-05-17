@@ -1,16 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { fetchCsrfToken } from "@/lib/client-security";
+import { useState } from "react";
+
+import { Button, type ButtonProps } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
-import { useState } from "react";
+import { fetchCsrfToken } from "@/lib/client-security";
+import { cn } from "@/lib/utils";
 
 type LogoutButtonProps = {
   className?: string;
+  variant?: ButtonProps["variant"];
+  size?: ButtonProps["size"];
 };
 
-export function LogoutButton({ className }: LogoutButtonProps) {
+export function LogoutButton({ className, variant = "default", size = "default" }: LogoutButtonProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -39,13 +44,9 @@ export function LogoutButton({ className }: LogoutButtonProps) {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setConfirmOpen(true)}
-        className={className ?? "rounded-lg border border-black bg-black px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-900"}
-      >
+      <Button type="button" variant={variant} size={size} className={cn(className)} onClick={() => setConfirmOpen(true)}>
         Logout
-      </button>
+      </Button>
       <ConfirmDialog
         open={confirmOpen}
         title="Logout"

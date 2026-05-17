@@ -7,6 +7,9 @@ import { AppImage } from "@/components/ui/AppImage";
 import { ActivityParticipationPanel } from "@/components/activities/ActivityParticipationPanel";
 import { getActivityEnd, isActivityActiveNow } from "@/lib/activity-time";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type ActivityItem = {
   id: string;
@@ -52,10 +55,7 @@ export function UserActivitiesTabs({ activities, authUserId }: Props) {
     [normalizedItems],
   );
   const myActivityItems = useMemo(
-    () =>
-      normalizedItems.filter(
-        (activity) => activity.joined && activity.normalizedStatus === myActivityFilter,
-      ),
+    () => normalizedItems.filter((activity) => activity.joined && activity.normalizedStatus === myActivityFilter),
     [myActivityFilter, normalizedItems],
   );
 
@@ -65,7 +65,9 @@ export function UserActivitiesTabs({ activities, authUserId }: Props) {
     const target = normalizedItems.find((activity) => activity.id === focus);
     if (target?.joined) {
       setSectionTab("MY_ACTIVITY");
-      setMyActivityFilter(target.normalizedStatus === "COMPLETED" ? "COMPLETED" : target.normalizedStatus === "CANCELLED" ? "CANCELLED" : "ACTIVE");
+      setMyActivityFilter(
+        target.normalizedStatus === "COMPLETED" ? "COMPLETED" : target.normalizedStatus === "CANCELLED" ? "CANCELLED" : "ACTIVE",
+      );
     } else {
       setSectionTab("ACTIVITY");
     }
@@ -75,41 +77,67 @@ export function UserActivitiesTabs({ activities, authUserId }: Props) {
     });
   }, [searchParams, normalizedItems]);
 
-  function renderCard(activity: ActivityItem & { joined: boolean; normalizedStatus: "ACTIVE" | "COMPLETED" | "CANCELLED" }) {
+  function renderCard(activity: (typeof normalizedItems)[number]) {
     const joined = activity.joined;
     const canAttendNow = isActivityActiveNow(new Date(activity.date), activity.timeLabel, activity.durationMinutes, new Date());
     const endTime = getActivityEnd(new Date(activity.date), activity.timeLabel, activity.durationMinutes);
     const isFull = activity.participants.length >= activity.participantLimit;
     const completed = activity.normalizedStatus === "COMPLETED";
 
+    function statusBadge() {
+      if (activity.normalizedStatus === "COMPLETED") {
+        return (
+          <Badge variant="muted" className="shrink-0">
+            Completed
+          </Badge>
+        );
+      }
+      if (activity.normalizedStatus === "CANCELLED") {
+        return (
+          <Badge variant="destructive" className="shrink-0">
+            Cancelled
+          </Badge>
+        );
+      }
+      if (isFull) {
+        return (
+          <Badge variant="warning" className="shrink-0">
+            Full
+          </Badge>
+        );
+      }
+      if (joined) {
+        return (
+          <Badge variant="outline" className="shrink-0 border-blue-200 bg-blue-500/10 text-blue-800">
+            Joined
+          </Badge>
+        );
+      }
+      return (
+        <Badge variant="success" className="shrink-0">
+          Active
+        </Badge>
+      );
+    }
+
     return (
-      <article id={`activity-${activity.id}`} key={activity.id} className="overflow-hidden rounded-3xl border-2 border-[#6b4f3a] bg-white shadow-lg">
-        <AppImage src={activity.imageUrl} alt={activity.title} className="h-52 w-full object-cover" />
-        <div className="space-y-3 p-5">
+      <Card id={`activity-${activity.id}`} key={activity.id} className="overflow-hidden shadow-sm">
+        <AppImage src={activity.imageUrl} alt={activity.title} className="aspect-video w-full object-cover" />
+        <CardHeader className="space-y-2 pb-2">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="text-xl font-semibold text-textPrimary">{activity.title}</h2>
-            {activity.normalizedStatus === "COMPLETED" ? (
-              <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">Completed</span>
-            ) : activity.normalizedStatus === "CANCELLED" ? (
-              <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-statusRejected">Cancelled</span>
-            ) : isFull ? (
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Full</span>
-            ) : joined ? (
-              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Joined</span>
-            ) : (
-              <span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-semibold text-green-700">Active</span>
-            )}
+            <CardTitle className="text-xl leading-snug">{activity.title}</CardTitle>
+            {statusBadge()}
           </div>
-          <p className="text-sm leading-6 text-textSecondary">{activity.description}</p>
-          <p className="text-sm text-textSecondary">
-            {formatDateDDMMYYYY(activity.date)} at {activity.timeLabel} • {activity.location}
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p className="leading-relaxed text-foreground/90">{activity.description}</p>
+          <p>
+            {formatDateDDMMYYYY(activity.date)} at {activity.timeLabel} · {activity.location}
           </p>
-          <p className="text-sm text-textSecondary">Duration: {activity.durationMinutes} minutes</p>
-          <p className="text-sm text-textSecondary">
-            Attendance window ends at {endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </p>
-          <p className="text-sm text-textSecondary">Organizer: {activity.organizer}</p>
-          <p className="text-sm text-textSecondary">
+          <p>Duration: {activity.durationMinutes} minutes</p>
+          <p>Attendance window ends at {endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
+          <p>Organizer: {activity.organizer}</p>
+          <p>
             Participants: {activity.participants.length}/{activity.participantLimit} ({isFull ? "Full" : "Open"})
           </p>
           {!completed ? (
@@ -122,56 +150,58 @@ export function UserActivitiesTabs({ activities, authUserId }: Props) {
               canAttendNow={canAttendNow}
             />
           ) : (
-            <p className="rounded-2xl bg-mainBg px-3 py-2 text-sm text-textSecondary">
+            <p className="rounded-md border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
               {activity.attendanceSigned ? "Attendance signed for this activity." : "Attendance not signed."}
             </p>
           )}
-        </div>
-      </article>
+        </CardContent>
+      </Card>
     );
   }
 
+  const emptyState = (
+    <Card className="border-dashed bg-muted/20 shadow-none">
+      <CardContent className="py-6 text-sm text-muted-foreground">No activities available at the moment. Stay tuned for upcoming events.</CardContent>
+    </Card>
+  );
+
   return (
-    <section className="space-y-6">
+    <section className="space-y-8">
       <div>
-        <h1 className="text-3xl font-semibold text-textPrimary">Community Activities</h1>
-        <p className="mt-2 text-sm text-textSecondary">Browse all activities and manage your joined activities with full filters.</p>
+        <h1 className="text-3xl font-semibold tracking-tight">Community Activities</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Browse all activities and manage your joined activities with full filters.</p>
       </div>
-      <div className="space-y-4">
+      <div className="space-y-6">
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setSectionTab("ACTIVITY")}
-            className={`rounded-full border px-4 py-2 text-sm font-medium ${sectionTab === "ACTIVITY" ? "border-black bg-black text-white" : "border-black/30 bg-white text-textPrimary"}`}
-          >
+          <Button type="button" variant={sectionTab === "ACTIVITY" ? "default" : "outline"} size="sm" onClick={() => setSectionTab("ACTIVITY")}>
             Activity
-          </button>
-          <button
-            type="button"
-            onClick={() => setSectionTab("MY_ACTIVITY")}
-            className={`rounded-full border px-4 py-2 text-sm font-medium ${sectionTab === "MY_ACTIVITY" ? "border-black bg-black text-white" : "border-black/30 bg-white text-textPrimary"}`}
-          >
+          </Button>
+          <Button type="button" variant={sectionTab === "MY_ACTIVITY" ? "default" : "outline"} size="sm" onClick={() => setSectionTab("MY_ACTIVITY")}>
             My Activity
-          </button>
+          </Button>
         </div>
         {sectionTab === "ACTIVITY" ? (
-        <div className="space-y-2">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-            {activityItems.length > 0 ? activityItems.map(renderCard) : <p className="rounded-2xl border-2 border-[#6b4f3a] bg-white p-4 text-sm text-textSecondary shadow-sm">No activities available at the moment. Stay tuned for upcoming events.</p>}
+            {activityItems.length > 0 ? activityItems.map(renderCard) : emptyState}
           </div>
-        </div>
         ) : null}
         {sectionTab === "MY_ACTIVITY" ? (
-        <div className="space-y-2">
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setMyActivityFilter("ACTIVE")} className={`rounded-full border px-4 py-2 text-sm font-medium ${myActivityFilter === "ACTIVE" ? "border-black bg-black text-white" : "border-black/30 bg-white text-textPrimary"}`}>Active</button>
-            <button type="button" onClick={() => setMyActivityFilter("COMPLETED")} className={`rounded-full border px-4 py-2 text-sm font-medium ${myActivityFilter === "COMPLETED" ? "border-black bg-black text-white" : "border-black/30 bg-white text-textPrimary"}`}>Completed</button>
-            <button type="button" onClick={() => setMyActivityFilter("CANCELLED")} className={`rounded-full border px-4 py-2 text-sm font-medium ${myActivityFilter === "CANCELLED" ? "border-black bg-black text-white" : "border-black/30 bg-white text-textPrimary"}`}>Cancelled</button>
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant={myActivityFilter === "ACTIVE" ? "default" : "outline"} size="sm" onClick={() => setMyActivityFilter("ACTIVE")}>
+                Active
+              </Button>
+              <Button type="button" variant={myActivityFilter === "COMPLETED" ? "default" : "outline"} size="sm" onClick={() => setMyActivityFilter("COMPLETED")}>
+                Completed
+              </Button>
+              <Button type="button" variant={myActivityFilter === "CANCELLED" ? "default" : "outline"} size="sm" onClick={() => setMyActivityFilter("CANCELLED")}>
+                Cancelled
+              </Button>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+              {myActivityItems.length > 0 ? myActivityItems.map(renderCard) : emptyState}
+            </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
-            {myActivityItems.length > 0 ? myActivityItems.map(renderCard) : <p className="rounded-2xl border-2 border-[#6b4f3a] bg-white p-4 text-sm text-textSecondary shadow-sm">No activities available at the moment. Stay tuned for upcoming events.</p>}
-          </div>
-        </div>
         ) : null}
       </div>
     </section>

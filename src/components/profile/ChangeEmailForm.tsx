@@ -5,6 +5,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { fetchCsrfToken } from "@/lib/client-security";
 import { useToast } from "@/components/ui/ToastProvider";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type ChangeEmailFormProps = {
   title: string;
@@ -53,49 +57,51 @@ export function ChangeEmailForm({ title, description, currentEmail, status }: Ch
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5 rounded-3xl border-2 border-[#6b4f3a] bg-white p-6 shadow-lg">
-      <div>
-        <h1 className="text-3xl font-semibold text-textPrimary">{title}</h1>
-        <p className="mt-2 text-sm text-textSecondary">{description}</p>
-        <p className="mt-1 text-sm text-textSecondary">Current email: {currentEmail}</p>
-      </div>
-      {status === "verified" ? (
-        <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Email verified and updated successfully.</p>
-      ) : null}
-      {status === "invalid-token" || status === "missing-token" ? (
-        <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-statusRejected">Invalid or expired verification link.</p>
-      ) : null}
-      {status === "email-in-use" ? (
-        <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm text-statusRejected">This email is already in use.</p>
-      ) : null}
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-textPrimary">Current Password:</label>
-        <input
-          type="password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          placeholder="Enter current password"
-          className="w-full rounded-2xl border border-borderUi px-4 py-3 text-sm"
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-textPrimary">New Email:</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="admin@gmail.com"
-          className="w-full rounded-2xl border border-borderUi px-4 py-3 text-sm"
-          required
-        />
-        {sameAsCurrent ? (
-          <p className="text-xs text-statusRejected">New email must be different from your current email.</p>
-        ) : null}
-      </div>
-      <button type="submit" disabled={sameAsCurrent} className="rounded-full bg-black px-6 py-3 text-sm font-semibold text-white shadow-lg disabled:cursor-not-allowed disabled:opacity-60">
-        Send Verification Link
-      </button>
-    </form>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-2xl">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+        <p className="text-sm text-muted-foreground">Current email: {currentEmail}</p>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={onSubmit} className="space-y-5">
+          {status === "verified" ? (
+            <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">Email verified and updated successfully.</p>
+          ) : null}
+          {status === "invalid-token" || status === "missing-token" ? (
+            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">Invalid or expired verification link.</p>
+          ) : null}
+          {status === "email-in-use" ? (
+            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">This email is already in use.</p>
+          ) : null}
+          <div className="space-y-2">
+            <Label htmlFor="email-current-password">Current Password</Label>
+            <Input
+              id="email-current-password"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Enter current password"
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="new-email">New Email</Label>
+            <Input
+              id="new-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@gmail.com"
+              required
+            />
+            {sameAsCurrent ? <p className="text-xs text-destructive">New email must be different from your current email.</p> : null}
+          </div>
+          <Button type="submit" disabled={sameAsCurrent}>
+            Send Verification Link
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

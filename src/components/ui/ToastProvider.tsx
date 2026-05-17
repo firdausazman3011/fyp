@@ -2,6 +2,8 @@
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
+import { cn } from "@/lib/utils";
+
 type ToastTone = "success" | "error" | "info";
 
 type ToastItem = {
@@ -32,17 +34,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed left-1/2 top-20 z-[100] flex -translate-x-1/2 flex-col items-center space-y-3">
+      <div className="pointer-events-none fixed left-1/2 top-20 z-[100] flex w-full max-w-sm -translate-x-1/2 flex-col items-center gap-2 px-4">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`min-w-72 rounded-2xl border px-6 py-3 text-center text-sm shadow-xl ${
-              toast.tone === "success"
-                ? "border-lime-300 bg-lime-100 text-green-900"
-                : toast.tone === "error"
-                  ? "border-rose-300 bg-rose-100 text-rose-900"
-                  : "border-black/20 bg-white text-textPrimary"
-            }`}
+            className={cn(
+              "pointer-events-auto w-full rounded-lg border px-4 py-3 text-center text-sm font-medium shadow-md",
+              toast.tone === "success" && "border-emerald-200 bg-emerald-50 text-emerald-900",
+              toast.tone === "error" && "border-destructive/30 bg-destructive/10 text-destructive",
+              toast.tone === "info" && "border-border bg-popover text-popover-foreground",
+            )}
           >
             {toast.message}
           </div>

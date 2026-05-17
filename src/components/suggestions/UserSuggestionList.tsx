@@ -6,6 +6,12 @@ import { fetchCsrfToken } from "@/lib/client-security";
 import { useToast } from "@/components/ui/ToastProvider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 type SuggestionItem = {
   id: string;
@@ -23,10 +29,10 @@ type SuggestionItem = {
 };
 
 const statusClass: Record<SuggestionItem["displayStatus"], string> = {
-  PENDING: "bg-statusPending text-textPrimary",
-  APPROVED: "bg-statusApproved text-textPrimary",
-  REJECTED: "bg-statusRejected text-white",
-  CANCELLED: "bg-rose-100 text-statusRejected",
+  PENDING: "border-transparent bg-amber-500/15 text-amber-800",
+  APPROVED: "border-transparent bg-emerald-500/15 text-emerald-800",
+  REJECTED: "border-transparent bg-destructive/15 text-destructive",
+  CANCELLED: "border-transparent bg-destructive/10 text-destructive",
 };
 
 export function UserSuggestionList({ initialSuggestions }: { initialSuggestions: SuggestionItem[] }) {
@@ -96,80 +102,96 @@ export function UserSuggestionList({ initialSuggestions }: { initialSuggestions:
     <>
       <div className="flex flex-wrap gap-2">
         {(["APPROVED", "PENDING", "REJECTED", "CANCELLED"] as const).map((status) => (
-          <button
+          <Button
             key={status}
             type="button"
+            variant={filter === status ? "default" : "outline"}
+            size="sm"
             onClick={() => setFilter(status)}
-            className={`rounded-full border px-4 py-2 text-sm font-medium ${filter === status ? "border-black bg-black text-white" : "border-black/30 bg-white text-textPrimary"}`}
           >
             {status[0] + status.slice(1).toLowerCase()}
-          </button>
+          </Button>
         ))}
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         {filteredSuggestions.map((suggestion) => (
-          <article id={`suggestion-${suggestion.id}`} key={suggestion.id} className="rounded-3xl border-2 border-[#6b4f3a] bg-cardBg p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-xl font-semibold text-textPrimary">{suggestion.title}</p>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass[suggestion.displayStatus]}`}>
+          <Card id={`suggestion-${suggestion.id}`} key={suggestion.id} className="shadow-sm">
+            <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
+              <CardTitle className="text-lg leading-snug">{suggestion.title}</CardTitle>
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-xs font-semibold",
+                  statusClass[suggestion.displayStatus],
+                )}
+              >
                 {suggestion.displayStatus}
               </span>
-            </div>
-            <p className="text-sm text-textSecondary">{suggestion.description}</p>
-            <div className="mt-4 grid gap-1 text-sm text-textSecondary">
-              <p>Suggested Location: {suggestion.location}</p>
-              <p>Suggested Date: {formatDateDDMMYYYY(suggestion.date)}</p>
-            </div>
-            {suggestion.adminRemark ? <p className="mt-1 text-xs text-textSecondary">Admin remark: {suggestion.adminRemark}</p> : null}
-            {suggestion.status === "APPROVED" && suggestion.convertedAt && !suggestion.convertedToId ? (
-              <p className="mt-2 text-xs text-amber-700">
-                ⚠️ This activity was approved and created but later removed due to a lack of participant registration.
-              </p>
-            ) : null}
-            {suggestion.canModify ? (
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditing(suggestion)}
-                  className="rounded-full bg-black px-4 py-1.5 text-xs font-semibold text-white"
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDeleteId(suggestion.id)}
-                  className="rounded-full border border-black px-4 py-1.5 text-xs font-semibold text-black"
-                >
-                  Delete
-                </button>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p className="text-foreground/90">{suggestion.description}</p>
+              <div className="grid gap-1">
+                <p>Suggested Location: {suggestion.location}</p>
+                <p>Suggested Date: {formatDateDDMMYYYY(suggestion.date)}</p>
               </div>
-            ) : null}
-          </article>
+              {suggestion.adminRemark ? <p className="text-xs">Admin remark: {suggestion.adminRemark}</p> : null}
+              {suggestion.status === "APPROVED" && suggestion.convertedAt && !suggestion.convertedToId ? (
+                <p className="text-xs text-amber-700">
+                  ⚠️ This activity was approved and created but later removed due to a lack of participant registration.
+                </p>
+              ) : null}
+              {suggestion.canModify ? (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button type="button" size="sm" onClick={() => setEditing(suggestion)}>
+                    Edit
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setDeleteId(suggestion.id)}>
+                    Delete
+                  </Button>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
         ))}
       </div>
       {filteredSuggestions.length === 0 ? (
-        <p className="rounded-2xl border-2 border-[#6b4f3a] bg-white p-4 text-sm text-textSecondary shadow-sm">
-          No suggestions available at the moment.
-        </p>
+        <Card className="border-dashed bg-muted/20 shadow-none">
+          <CardContent className="py-6 text-sm text-muted-foreground">No suggestions available at the moment.</CardContent>
+        </Card>
       ) : null}
 
       {editing ? (
-        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/45 p-4">
-          <form action={updateSuggestion} className="w-full max-w-2xl space-y-3 rounded-2xl border-2 border-[#6b4f3a] bg-white p-5">
-            <h3 className="text-lg font-semibold">Edit Suggestion</h3>
-            <label className="text-sm font-medium text-textPrimary">Title:</label>
-            <input name="title" defaultValue={editing.title} className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
-            <label className="text-sm font-medium text-textPrimary">Description:</label>
-            <textarea name="description" defaultValue={editing.description} rows={4} className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
-            <label className="text-sm font-medium text-textPrimary">Suggested Date:</label>
-            <input name="date" type="date" defaultValue={editing.date.slice(0, 10)} className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
-            <label className="text-sm font-medium text-textPrimary">Suggested Location:</label>
-            <input name="location" defaultValue={editing.location} className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
-            <div className="flex gap-2">
-              <button type="submit" className="rounded-full bg-black px-4 py-2 text-sm font-semibold text-white">Save</button>
-              <button type="button" onClick={() => setEditing(null)} className="rounded-full border border-black px-4 py-2 text-sm font-semibold text-black">Close</button>
-            </div>
-          </form>
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
+          <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto shadow-lg">
+            <CardHeader>
+              <CardTitle>Edit Suggestion</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <form action={updateSuggestion} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-title">Title</Label>
+                  <Input id="edit-title" name="title" defaultValue={editing.title} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea id="edit-description" name="description" defaultValue={editing.description} rows={4} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-date">Suggested Date</Label>
+                  <Input id="edit-date" name="date" type="date" defaultValue={editing.date.slice(0, 10)} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-location">Suggested Location</Label>
+                  <Input id="edit-location" name="location" defaultValue={editing.location} required />
+                </div>
+                <div className="flex justify-end gap-2 border-t pt-4">
+                  <Button type="button" variant="outline" onClick={() => setEditing(null)}>
+                    Close
+                  </Button>
+                  <Button type="submit">Save</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       ) : null}
 

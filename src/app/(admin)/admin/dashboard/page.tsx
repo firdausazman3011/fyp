@@ -4,6 +4,9 @@ import Link from "next/link";
 import { isActivityCompleted } from "@/lib/activity-time";
 import { AppImage } from "@/components/ui/AppImage";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 export default async function AdminDashboardPage() {
   const [latestSuggestions, rawLatestActivities, suggestionCounts, allActivities] = await Promise.all([
@@ -40,86 +43,160 @@ export default async function AdminDashboardPage() {
   };
 
   return (
-    <section className="space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-3xl border-2 border-[#6b4f3a] bg-white p-5 text-center shadow-sm">
-          <h2 className="text-xl font-semibold text-textPrimary">Activity Overview</h2>
-          <div className="mt-4 flex items-center justify-center">
-            <div className="px-6">
-              <p className="text-2xl font-semibold text-green-700">{activitySummary.active}</p>
-              <p className="text-xs font-semibold text-green-700">Active</p>
-            </div>
-            <div className="h-10 w-px bg-borderUi" />
-            <div className="px-6">
-              <p className="text-2xl font-semibold text-slate-700">{activitySummary.completed}</p>
-              <p className="text-xs font-semibold text-slate-700">Completed</p>
-            </div>
-            <div className="h-10 w-px bg-borderUi" />
-            <div className="px-6">
-              <p className="text-2xl font-semibold text-statusRejected">{activitySummary.cancelled}</p>
-              <p className="text-xs font-semibold text-statusRejected">Cancelled</p>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-3xl border-2 border-[#6b4f3a] bg-white p-5 text-center shadow-sm">
-          <h2 className="text-xl font-semibold text-textPrimary">Suggestion Overview</h2>
-          <div className="mt-4 flex items-center justify-center">
-            <div className="px-5">
-              <p className="text-2xl font-semibold text-green-700">{suggestionSummary.approved}</p>
-              <p className="text-xs font-semibold text-green-700">Approved</p>
-            </div>
-            <div className="h-10 w-px bg-borderUi" />
-            <div className="px-5">
-              <p className="text-2xl font-semibold text-amber-600">{suggestionSummary.pending}</p>
-              <p className="text-xs font-semibold text-amber-600">Pending</p>
-            </div>
-            <div className="h-10 w-px bg-borderUi" />
-            <div className="px-5">
-              <p className="text-2xl font-semibold text-statusRejected">{suggestionSummary.rejected}</p>
-              <p className="text-xs font-semibold text-statusRejected">Rejected</p>
-            </div>
-            <div className="h-10 w-px bg-borderUi" />
-            <div className="px-5">
-              <p className="text-2xl font-semibold text-blue-700">{suggestionSummary.converted}</p>
-              <p className="text-xs font-semibold text-blue-700">Converted</p>
-            </div>
-          </div>
-        </div>
+    <section className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="mt-2 text-sm text-muted-foreground">Overview of community activity and suggestions.</p>
       </div>
-      <div className="space-y-4">
-        <div className="overflow-hidden rounded-3xl border-2 border-[#6b4f3a] bg-white shadow-sm">
-          <div className="border-b border-primary/10 bg-rose-50 px-5 py-4">
-            <p className="text-lg font-semibold text-textPrimary">Latest Suggestions</p>
-          </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Activity Overview */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              Activity Overview
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-stretch gap-2.5 rounded-xl border bg-muted/30 p-3">
+              <div className="flex flex-1 flex-col items-center gap-2 rounded-lg bg-background p-4 relative overflow-hidden border">
+                <div className="absolute top-0 inset-x-0 h-0.5 rounded-t-lg bg-emerald-500" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+                <p className="text-2xl font-semibold text-emerald-700">{activitySummary.active}</p>
+                <p className="text-xs font-medium text-muted-foreground">Active</p>
+              </div>
+              <div className="flex flex-1 flex-col items-center gap-2 rounded-lg bg-background p-4 relative overflow-hidden border">
+                <div className="absolute top-0 inset-x-0 h-0.5 rounded-t-lg bg-zinc-400" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-zinc-500"><path d="M20 6 9 17l-5-5"/><path d="m6 9 6 6 8-8"/></svg>
+                <p className="text-2xl font-semibold text-foreground">{activitySummary.completed}</p>
+                <p className="text-xs font-medium text-muted-foreground">Completed</p>
+              </div>
+              <div className="flex flex-1 flex-col items-center gap-2 rounded-lg bg-background p-4 relative overflow-hidden border">
+                <div className="absolute top-0 inset-x-0 h-0.5 rounded-t-lg bg-destructive" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-destructive"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+                <p className="text-2xl font-semibold text-destructive">{activitySummary.cancelled}</p>
+                <p className="text-xs font-medium text-muted-foreground">Cancelled</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Suggestion Overview */}
+        <Card>
+          <CardHeader className="pb-2 ">
+            <CardTitle className="flex items-center gap-2 text-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
+  <circle cx="12" cy="12" r="10"/>
+  <polyline points="12 6 12 12 16 14"/>
+</svg>
+              Suggestion Overview
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-2.5">
+              {[
+                {
+                  label: "Approved",
+                  value: suggestionSummary.approved,
+                  colorClass: "text-emerald-700",
+                  accentClass: "bg-emerald-500",
+                  iconBg: "bg-emerald-50 dark:bg-emerald-950/40",
+                  iconColor: "text-emerald-600",
+                  borderClass: "border-l-emerald-500",
+                  icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/></svg>,
+                },
+                {
+                  label: "Pending",
+                  value: suggestionSummary.pending,
+                  colorClass: "text-amber-600",
+                  accentClass: "bg-amber-500",
+                  iconBg: "bg-amber-50 dark:bg-amber-950/40",
+                  iconColor: "text-amber-600",
+                  borderClass: "border-l-amber-500",
+                  icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+                },
+                {
+                  label: "Rejected",
+                  value: suggestionSummary.rejected,
+                  colorClass: "text-destructive",
+                  accentClass: "bg-destructive",
+                  iconBg: "bg-red-50 dark:bg-red-950/40",
+                  iconColor: "text-destructive",
+                  borderClass: "border-l-destructive",
+                  icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 14V2"/><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z"/></svg>,
+                },
+                {
+                  label: "Converted",
+                  value: suggestionSummary.converted,
+                  colorClass: "text-blue-600",
+                  accentClass: "bg-blue-500",
+                  iconBg: "bg-blue-50 dark:bg-blue-950/40",
+                  iconColor: "text-blue-600",
+                  borderClass: "border-l-blue-500",
+                  icon: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>,
+                },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg border bg-background p-3.5 relative overflow-hidden border-l-2",
+                    item.borderClass
+                  )}
+                >
+                  <div className={cn("flex h-9 w-9 shrink-0 items-center justify-center rounded-md", item.iconBg, item.iconColor)}>
+                    {item.icon}
+                  </div>
+                  <div className="flex flex-col">
+                    <p className={cn("text-xl font-semibold leading-tight", item.colorClass)}>{item.value}</p>
+                    <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      <Card className="overflow-hidden shadow-sm">
+        <CardHeader className="border-b bg-muted/40 py-4">
+          <CardTitle className="text-lg">Latest Suggestions</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="bg-mainBg text-textSecondary">
+              <thead className="border-b bg-muted/30 text-muted-foreground">
                 <tr>
-                  <th className="px-5 py-3 font-medium">Title</th>
-                  <th className="px-5 py-3 font-medium">Suggested Date</th>
-                  <th className="px-5 py-3 font-medium">Location</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium sm:px-6">Title</th>
+                  <th className="px-4 py-3 font-medium sm:px-6">Suggested Date</th>
+                  <th className="px-4 py-3 font-medium sm:px-6">Location</th>
+                  <th className="px-4 py-3 font-medium sm:px-6">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {latestSuggestions.map((item) => (
-                  <tr key={item.id} className="border-t border-borderUi">
-                    <td className="px-5 py-3 font-medium text-textPrimary">
-                      <Link className="underline-offset-2 hover:underline" href={`/admin/suggestions?focus=${item.id}`}>{item.title}</Link>
+                  <tr key={item.id} className="border-b border-border last:border-0">
+                    <td className="px-4 py-3 font-medium sm:px-6">
+                      <Link
+                        className="text-primary underline-offset-4 hover:underline"
+                        href={`/admin/suggestions?focus=${item.id}`}
+                      >
+                        {item.title}
+                      </Link>
                     </td>
-                    <td className="px-5 py-3 text-textSecondary">{formatDateDDMMYYYY(item.date)}</td>
-                    <td className="px-5 py-3 text-textSecondary">{item.location}</td>
-                    <td className="px-5 py-3">
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        item.convertedAt
-                          ? "bg-blue-100 text-blue-700"
-                          : item.status === "APPROVED"
-                            ? "bg-statusApproved text-textPrimary"
-                            : item.status === "PENDING"
-                              ? "bg-statusPending text-textPrimary"
-                              : "bg-statusRejected text-white"
-                      }`}>
+                    <td className="px-4 py-3 text-muted-foreground sm:px-6">{formatDateDDMMYYYY(item.date)}</td>
+                    <td className="px-4 py-3 text-muted-foreground sm:px-6">{item.location}</td>
+                    <td className="px-4 py-3 sm:px-6">
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold",
+                          item.convertedAt
+                            ? "border-transparent bg-blue-500/15 text-blue-800"
+                            : item.status === "APPROVED"
+                              ? "border-transparent bg-emerald-500/15 text-emerald-800"
+                              : item.status === "PENDING"
+                                ? "border-transparent bg-amber-500/15 text-amber-800"
+                                : "border-transparent bg-destructive/15 text-destructive",
+                        )}
+                      >
                         {item.convertedAt ? (item.convertedTo ? "CONVERTED" : "CONVERTED (DELETED)") : item.status}
                       </span>
                     </td>
@@ -128,35 +205,37 @@ export default async function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold text-textPrimary">Latest Activities</h2>
+        </CardContent>
+      </Card>
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold tracking-tight">Latest Activities</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           {latestActivities.map((item) => (
-            <Link key={item.id} href={`/admin/activities?focus=${item.id}`} className="block">
-              <article className="overflow-hidden rounded-3xl border-2 border-[#6b4f3a] bg-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg">
-                <div className="h-44 w-full bg-mainBg">
-                  <AppImage src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" />
+            <Link key={item.id} href={`/admin/activities?focus=${item.id}`} className="group block">
+              <Card className="h-full overflow-hidden transition-shadow hover:shadow-md">
+                <div className="aspect-video w-full overflow-hidden bg-muted">
+                  <AppImage src={item.imageUrl} alt={item.title} className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]" />
                 </div>
-                <div className="p-5">
+                <CardHeader className="space-y-2 pb-2">
                   <div className="flex items-start justify-between gap-3">
-                    <h2 className="font-semibold text-textPrimary">{item.title}</h2>
-                    <span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-semibold text-green-700">Active</span>
+                    <CardTitle className="text-base leading-snug">{item.title}</CardTitle>
+                    <Badge variant="success" className="shrink-0">
+                      Active
+                    </Badge>
                   </div>
-                  <p className="mt-1 text-sm text-textSecondary">{item.description}</p>
-                  <p className="mt-3 text-xs text-textSecondary">
-                    {formatDateDDMMYYYY(item.date)} • {item.location} • {item.participants.length} participants
+                  <p className="line-clamp-2 text-sm text-muted-foreground">{item.description}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDateDDMMYYYY(item.date)} · {item.location} · {item.participants.length} participants
                   </p>
-                </div>
-              </article>
+                </CardHeader>
+              </Card>
             </Link>
           ))}
         </div>
         {latestActivities.length === 0 ? (
-          <p className="rounded-2xl border-2 border-[#6b4f3a] bg-white p-4 text-sm text-textSecondary shadow-sm">
-            No activities available at the moment. Stay tuned for upcoming events.
-          </p>
+          <Card className="border-dashed bg-muted/20 p-6 shadow-none">
+            <p className="text-sm text-muted-foreground">No activities available at the moment. Stay tuned for upcoming events.</p>
+          </Card>
         ) : null}
       </div>
     </section>

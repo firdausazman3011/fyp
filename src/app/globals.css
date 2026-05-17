@@ -2,25 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: light;
-}
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 350 72% 58%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 84 48% 90%;
+    --secondary-foreground: 240 8% 12%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 45%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 350 72% 58%;
+    --radius: 0.625rem;
+    --sidebar: 240 6% 10%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-border: 240 4% 18%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --status-approved: 88 42% 42%;
+    --status-pending: 45 96% 77%;
+    --status-rejected: 350 65% 52%;
+  }
 
-body {
-  @apply bg-mainBg text-textPrimary antialiased;
-  background-image:
-    radial-gradient(circle at top left, rgba(231, 113, 125, 0.14), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(175, 210, 117, 0.18), transparent 32%);
-}
+  * {
+    @apply border-border;
+  }
 
-input:focus-visible,
-button:focus-visible,
-a:focus-visible {
-  @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-cardBg;
-}
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
 
-input,
-textarea,
-select {
-  @apply text-textPrimary placeholder:text-textSecondary;
+  input:focus-visible,
+  button:focus-visible,
+  a:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  input,
+  textarea,
+  select {
+    @apply text-foreground placeholder:text-muted-foreground;
+  }
 }

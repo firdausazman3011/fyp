@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fetchCsrfToken } from "@/lib/client-security";
 import { useToast } from "@/components/ui/ToastProvider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   suggestionId: string;
@@ -19,7 +20,7 @@ export function ReviewSuggestionActions({ suggestionId, status, converted }: Pro
   const [pending, setPending] = useState(false);
   const [confirmRejectOpen, setConfirmRejectOpen] = useState(false);
 
-  async function review(status: "APPROVED" | "REJECTED") {
+  async function review(next: "APPROVED" | "REJECTED") {
     const csrfToken = await fetchCsrfToken();
     if (!csrfToken) {
       showToast("Unable to review suggestion.", "error");
@@ -30,7 +31,7 @@ export function ReviewSuggestionActions({ suggestionId, status, converted }: Pro
     const response = await fetch(`/api/suggestions/${suggestionId}/review`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status: next }),
     });
     const data = (await response.json()) as { message?: string; error?: string };
     setPending(false);
@@ -38,7 +39,7 @@ export function ReviewSuggestionActions({ suggestionId, status, converted }: Pro
       showToast(data.error ?? "Unable to review suggestion.", "error");
       return;
     }
-    setCurrentStatus(status);
+    setCurrentStatus(next);
     setConfirmRejectOpen(false);
     showToast(data.message ?? "Suggestion updated.", "success");
     router.refresh();
@@ -50,36 +51,21 @@ export function ReviewSuggestionActions({ suggestionId, status, converted }: Pro
 
   return (
     <>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-1 flex flex-wrap gap-2">
         {currentStatus === "PENDING" ? (
           <>
-            <button
-              type="button"
-              onClick={() => review("APPROVED")}
-              disabled={pending}
-              className="w-full rounded-full bg-secondary px-4 py-2 text-sm font-medium text-textPrimary disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-            >
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" disabled={pending} onClick={() => review("APPROVED")}>
               Approve
-            </button>
-            <button
-              type="button"
-              onClick={() => setConfirmRejectOpen(true)}
-              disabled={pending}
-              className="w-full rounded-full bg-statusRejected px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-            >
+            </Button>
+            <Button type="button" variant="destructive" className="w-full sm:w-auto" disabled={pending} onClick={() => setConfirmRejectOpen(true)}>
               Reject
-            </button>
+            </Button>
           </>
         ) : null}
         {currentStatus === "APPROVED" && !converted ? (
-          <button
-            type="button"
-            onClick={convert}
-            disabled={pending}
-            className="w-full rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-          >
+          <Button type="button" className="w-full bg-blue-600 text-white hover:bg-blue-600/90 sm:w-auto" disabled={pending} onClick={convert}>
             Convert
-          </button>
+          </Button>
         ) : null}
       </div>
       <ConfirmDialog

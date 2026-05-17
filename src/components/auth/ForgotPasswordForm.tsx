@@ -58,13 +58,20 @@ export function ForgotPasswordForm() {
         required
       />
 
-      {error ? <p className="rounded-lg bg-rose-50 p-2 text-sm text-statusRejected">{error}</p> : null}
-      {success ? <p className="rounded-lg bg-emerald-50 p-2 text-sm text-emerald-700">{success}</p> : null}
+      {error ? (
+        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+      ) : null}
+      {success ? (
+        <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{success}</p>
+      ) : null}
 
       <SubmitButton label={redirecting ? "Redirecting..." : "Send reset link"} pendingLabel="Sending..." />
 
-      <p className="text-center text-sm text-textSecondary">
-        Back to <Link href="/login" className="text-primary hover:opacity-90">Login</Link>
+      <p className="text-center text-sm text-muted-foreground">
+        Back to{" "}
+        <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+          Login
+        </Link>
       </p>
     </form>
   );

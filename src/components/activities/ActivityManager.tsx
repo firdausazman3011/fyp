@@ -10,6 +10,12 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { AppImage } from "@/components/ui/AppImage";
 import { isActivityCompleted } from "@/lib/activity-time";
 import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 type ActivityItem = {
   id: string;
@@ -84,11 +90,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
     const computed = items.map((item) => {
       const completed = isActivityCompleted(new Date(item.date), item.timeLabel, item.durationMinutes);
       const normalizedStatus =
-        item.status === ActivityStatus.CANCELLED
-          ? "CANCELLED"
-          : completed
-            ? "COMPLETED"
-            : "ACTIVE";
+        item.status === ActivityStatus.CANCELLED ? "CANCELLED" : completed ? "COMPLETED" : "ACTIVE";
       return { ...item, normalizedStatus };
     });
     const filtered = computed.filter((item) => {
@@ -330,158 +332,164 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center">
         {!showForm ? (
-          <button type="button" onClick={() => setShowForm(true)} className="rounded-full bg-black px-5 py-2.5 text-sm font-semibold text-white shadow-lg">
+          <Button type="button" onClick={() => setShowForm(true)}>
             Add New Activity
-          </button>
+          </Button>
         ) : null}
       </div>
 
       <div className="flex flex-wrap gap-2">
         {(["ACTIVE", "COMPLETED", "CANCELLED"] as const).map((filter) => (
-          <button
-            key={filter}
-            type="button"
-            onClick={() => setStatusFilter(filter)}
-            className={`rounded-full border px-4 py-2 text-sm font-medium ${statusFilter === filter ? "border-black bg-black text-white" : "border-black/30 bg-white text-textPrimary"}`}
-          >
+          <Button key={filter} type="button" variant={statusFilter === filter ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(filter)}>
             {filter[0] + filter.slice(1).toLowerCase()}
-          </button>
+          </Button>
         ))}
       </div>
 
       {showForm ? (
-      <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/45 p-4">
-      <form onSubmit={onSubmit} className="max-h-[90vh] w-full max-w-4xl overflow-y-auto space-y-4 rounded-3xl border-2 border-[#6b4f3a] bg-white p-4 shadow-lg sm:p-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-          <h2 className="text-xl font-semibold text-textPrimary">{editingId ? "Edit Activity" : "Add New Activity"}</h2>
-            <p className="text-sm text-textSecondary">
-              Rule enforced: admin can add, edit, and delete activity data from one place.
-            </p>
-          </div>
-          {editingId ? (
-            <button type="button" onClick={closeForm} className="rounded-full border border-borderUi px-4 py-2 text-sm">
-              Cancel Edit
-            </button>
-          ) : (
-            <button type="button" onClick={closeForm} className="rounded-full border border-borderUi px-4 py-2 text-sm">
-              Close
-            </button>
-          )}
-        </div>
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
+          <Card className="max-h-[90vh] w-full max-w-4xl overflow-y-auto shadow-lg">
+            <form onSubmit={onSubmit} className="flex flex-col">
+              <CardHeader className="flex flex-col gap-4 border-b bg-muted/30 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1">
+                  <CardTitle>{editingId ? "Edit Activity" : "Add New Activity"}</CardTitle>
+                  <CardDescription>Rule enforced: admin can add, edit, and delete activity data from one place.</CardDescription>
+                </div>
+                <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={closeForm}>
+                  {editingId ? "Cancel Edit" : "Close"}
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="activity-title">Activity Title</Label>
+                    <Input
+                      id="activity-title"
+                      value={form.title}
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      placeholder="Enter activity title"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="activity-organizer">Organizer</Label>
+                    <Input
+                      id="activity-organizer"
+                      value={form.organizer}
+                      onChange={(e) => setForm({ ...form, organizer: e.target.value })}
+                      placeholder="Enter organizer name"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="activity-description">Description</Label>
+                  <Textarea
+                    id="activity-description"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Enter activity description"
+                    rows={4}
+                    required
+                  />
+                </div>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="activity-date">Date</Label>
+                    <Input id="activity-date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} type="date" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="activity-time">Time</Label>
+                    <Input id="activity-time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} type="time" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="durationMinutes">Duration (Minutes)</Label>
+                    <Input
+                      id="durationMinutes"
+                      name="durationMinutes"
+                      value={form.durationMinutes}
+                      onChange={(e) => {
+                        e.target.setCustomValidity("");
+                        setForm({ ...form, durationMinutes: e.target.value.replace(/[^0-9]/g, "") });
+                      }}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="participant-limit">Participant Limit</Label>
+                    <Input
+                      id="participant-limit"
+                      value={form.participantLimit}
+                      onChange={(e) => setForm({ ...form, participantLimit: Number(e.target.value) })}
+                      type="number"
+                      min={1}
+                      step={1}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="activity-location">Location</Label>
+                  <Input
+                    id="activity-location"
+                    value={form.location}
+                    onChange={(e) => setForm({ ...form, location: e.target.value })}
+                    placeholder="Enter location"
+                    required
+                  />
+                </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-textPrimary">Activity Title:</label>
-            <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Enter activity title" className="w-full rounded-2xl border border-primary/20 bg-rose-50 px-4 py-3 text-sm" required />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-textPrimary">Organizer:</label>
-            <input
-              value={form.organizer}
-              onChange={(e) => setForm({ ...form, organizer: e.target.value })}
-              placeholder="Enter organizer name"
-              className="w-full rounded-2xl border border-primary/20 bg-rose-50 px-4 py-3 text-sm font-medium text-textPrimary"
-              required
-            />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-textPrimary">Description:</label>
-          <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Enter activity description" rows={4} className="w-full rounded-2xl border border-primary/20 bg-rose-50 px-4 py-3 text-sm" required />
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-textPrimary">Date:</label>
-            <input value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} type="date" className="w-full rounded-2xl border border-primary/20 bg-rose-50 px-4 py-3 text-sm" required />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-textPrimary">Time:</label>
-            <input value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} type="time" className="w-full rounded-2xl border border-primary/20 bg-rose-50 px-4 py-3 text-sm" required />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-textPrimary">Duration (Minutes):</label>
-            <input
-              name="durationMinutes"
-              value={form.durationMinutes}
-              onChange={(e) => {
-                e.target.setCustomValidity("");
-                setForm({ ...form, durationMinutes: e.target.value.replace(/[^0-9]/g, "") });
-              }}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              className="w-full rounded-2xl border border-primary/20 bg-rose-50 px-4 py-3 text-sm"
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-textPrimary">Participant Limit:</label>
-            <input
-              value={form.participantLimit}
-              onChange={(e) => setForm({ ...form, participantLimit: Number(e.target.value) })}
-              type="number"
-              min={1}
-              step={1}
-              className="w-full rounded-2xl border border-primary/20 bg-rose-50 px-4 py-3 text-sm"
-              required
-            />
-          </div>
-        </div>
-        <div className="grid gap-4 md:grid-cols-1">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-textPrimary">Location:</label>
-            <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Enter location" className="w-full rounded-2xl border border-primary/20 bg-rose-50 px-4 py-3 text-sm" required />
-          </div>
-        </div>
+                <div className="rounded-lg border border-dashed border-muted-foreground/25 bg-muted/30 p-4">
+                  <Label className="text-base">Activity image</Label>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Rule enforced: activities require an image; upload directly from your laptop. Supported types: `.png`, `.jpg`, `.jpeg`, `.webp`,
+                    `.gif`, `.bmp`, `.svg`.
+                  </p>
+                  <Input
+                    type="file"
+                    accept=".png,.jpg,.jpeg,.webp,.gif,.bmp,.svg,image/png,image/jpeg,image/webp,image/gif,image/bmp,image/svg+xml"
+                    onChange={onFileChange}
+                    className="mt-3 cursor-pointer"
+                  />
+                  {uploading ? <p className="mt-2 text-sm text-primary">Uploading image...</p> : null}
+                  {form.imageUrl ? <p className="mt-2 text-xs text-muted-foreground">Uploaded: {form.imageUrl}</p> : null}
+                </div>
 
-        <div className="rounded-2xl border border-dashed border-primary/30 bg-rose-50/40 p-4">
-          <label className="block text-sm font-medium text-textPrimary">Activity image</label>
-          <p className="mt-1 text-xs text-textSecondary">
-            Rule enforced: activities require an image; upload directly from your laptop. Supported types: `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, `.bmp`, `.svg`.
-          </p>
-          <input
-            type="file"
-            accept=".png,.jpg,.jpeg,.webp,.gif,.bmp,.svg,image/png,image/jpeg,image/webp,image/gif,image/bmp,image/svg+xml"
-            onChange={onFileChange}
-            className="mt-3 block w-full text-sm"
-          />
-          {uploading ? <p className="mt-2 text-sm text-primary">Uploading image...</p> : null}
-          {form.imageUrl ? <p className="mt-2 text-xs text-textSecondary">Uploaded: {form.imageUrl}</p> : null}
+                <div className="flex flex-wrap gap-2 border-t pt-4">
+                  <Button type="submit">{editingId ? "Save Activity" : "Add Activity"}</Button>
+                </div>
+              </CardContent>
+            </form>
+          </Card>
         </div>
-
-        <div className="flex flex-wrap gap-3">
-          <button type="submit" className="rounded-full bg-black px-6 py-3 text-sm font-semibold text-white shadow-lg">
-            {editingId ? "Save Activity" : "Add Activity"}
-          </button>
-        </div>
-      </form>
-      </div>
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-2">
         {sortedItems.map((activity) => (
-          <article id={`admin-activity-${activity.id}`} key={activity.id} className="overflow-hidden rounded-3xl border-2 border-[#6b4f3a] bg-white shadow-md">
-              <div className="h-44 w-full bg-mainBg">
-                <AppImage src={activity.imageUrl} alt={activity.title} className="h-full w-full object-cover" />
-              </div>
-              <div className="space-y-4 p-4 sm:p-5">
+          <Card id={`admin-activity-${activity.id}`} key={activity.id} className="overflow-hidden shadow-sm">
+            <div className="aspect-video w-full bg-muted">
+              <AppImage src={activity.imageUrl} alt={activity.title} className="h-full w-full object-cover" />
+            </div>
+            <CardContent className="space-y-4 p-4 sm:p-5">
               <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-lg font-semibold text-textPrimary">{activity.title}</h3>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-lg font-semibold leading-tight">{activity.title}</h3>
                   {activity.normalizedStatus === "CANCELLED" ? (
-                    <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-primary">Cancelled</span>
+                    <Badge variant="destructive">Cancelled</Badge>
                   ) : activity.normalizedStatus === "COMPLETED" ? (
-                    <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">Completed</span>
+                    <Badge variant="muted">Completed</Badge>
                   ) : (
-                    <span className="rounded-full bg-lime-100 px-3 py-1 text-xs font-semibold text-green-700">Active</span>
+                    <Badge variant="success">Active</Badge>
                   )}
                 </div>
-                <p className="text-sm text-textSecondary">{activity.description}</p>
-                <div className="grid gap-1 text-sm text-textSecondary sm:grid-cols-2">
+                <p className="text-sm text-muted-foreground">{activity.description}</p>
+                <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
                   <p>Date: {formatDateDDMMYYYY(activity.date)}</p>
                   <p>Time: {activity.timeLabel}</p>
                   <p>Duration: {activity.durationMinutes} mins</p>
@@ -491,43 +499,39 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                   </p>
                   <p>Location: {activity.location}</p>
                   <p>Organizer: {activity.organizer}</p>
-                  <button type="button" onClick={() => setDetailActivityId(activity.id)} className="rounded-full border border-black px-3 py-1 text-left text-xs font-semibold text-black">
+                  <Button type="button" variant="outline" size="sm" className="justify-start text-left font-normal" onClick={() => setDetailActivityId(activity.id)}>
                     Participants: {activity.participantCount}
-                  </button>
-                  <button type="button" onClick={() => setDetailActivityId(activity.id)} className="rounded-full border border-black px-3 py-1 text-left text-xs font-semibold text-black">
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="justify-start text-left font-normal" onClick={() => setDetailActivityId(activity.id)}>
                     Attendance: {activity.attendanceCount}
-                  </button>
+                  </Button>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 {activity.normalizedStatus === "ACTIVE" ? (
-                  <button type="button" onClick={() => fillForm(activity)} className="rounded-full bg-black px-4 py-2 text-sm font-medium text-white">
+                  <Button type="button" size="sm" onClick={() => fillForm(activity)}>
                     Edit
-                  </button>
+                  </Button>
                 ) : null}
                 {activity.normalizedStatus === "ACTIVE" && activity.participantCount > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setCancelId(activity.id)}
-                    className="rounded-full border border-black px-4 py-2 text-sm font-medium text-black"
-                  >
+                  <Button type="button" size="sm" variant="outline" onClick={() => setCancelId(activity.id)}>
                     Cancel
-                  </button>
+                  </Button>
                 ) : null}
                 {activity.normalizedStatus === "ACTIVE" && activity.participantCount === 0 ? (
-                  <button type="button" onClick={() => setDeleteId(activity.id)} className="rounded-full bg-statusRejected px-4 py-2 text-sm font-medium text-white">
+                  <Button type="button" size="sm" variant="destructive" onClick={() => setDeleteId(activity.id)}>
                     Delete
-                  </button>
+                  </Button>
                 ) : null}
               </div>
-              </div>
-          </article>
+            </CardContent>
+          </Card>
         ))}
       </div>
       {sortedItems.length === 0 ? (
-        <p className="rounded-2xl border-2 border-[#6b4f3a] bg-white p-4 text-sm text-textSecondary shadow-sm">
-          No activities available at the moment. Stay tuned for upcoming events.
-        </p>
+        <Card className="border-dashed bg-muted/20 shadow-none">
+          <CardContent className="py-6 text-sm text-muted-foreground">No activities available at the moment. Stay tuned for upcoming events.</CardContent>
+        </Card>
       ) : null}
       <ConfirmDialog
         open={deleteId !== null}
@@ -556,51 +560,51 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
         onCancel={() => setCancelId(null)}
       />
       {detailActivity ? (
-        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/45 p-4">
-          <div className="w-full max-w-3xl rounded-3xl bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
+          <Card className="max-h-[90vh] w-full max-w-3xl overflow-y-auto shadow-lg">
+            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
               <div>
-                <h2 className="text-2xl font-semibold text-textPrimary">{detailActivity.title}</h2>
-                <p className="mt-1 text-sm text-textSecondary">Joined users and attendance details for this activity.</p>
+                <CardTitle className="text-2xl">{detailActivity.title}</CardTitle>
+                <CardDescription className="mt-1">Joined users and attendance details for this activity.</CardDescription>
               </div>
-              <button type="button" onClick={() => setDetailActivityId(null)} className="rounded-full border border-borderUi px-4 py-2 text-sm font-medium">
+              <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={() => setDetailActivityId(null)}>
                 Close
-              </button>
-            </div>
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
+              </Button>
+            </CardHeader>
+            <CardContent className="grid gap-6 md:grid-cols-2">
               <div>
-                <h3 className="text-lg font-semibold text-textPrimary">Participants</h3>
-                <div className="mt-3 space-y-3">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Participants</h3>
+                <div className="mt-3 space-y-2">
                   {detailActivity.participants.length ? (
                     detailActivity.participants.map((participant) => (
-                      <div key={participant.id} className="rounded-2xl bg-mainBg px-4 py-3">
-                        <p className="font-medium text-textPrimary">{participant.name}</p>
-                        <p className="text-sm text-textSecondary">{participant.email}</p>
+                      <div key={participant.id} className="rounded-lg border bg-muted/30 px-4 py-3">
+                        <p className="font-medium">{participant.name}</p>
+                        <p className="text-sm text-muted-foreground">{participant.email}</p>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-textSecondary">No participants yet.</p>
+                    <p className="text-sm text-muted-foreground">No participants yet.</p>
                   )}
                 </div>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-textPrimary">Attendance</h3>
-                <div className="mt-3 space-y-3">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Attendance</h3>
+                <div className="mt-3 space-y-2">
                   {detailActivity.attendance.length ? (
                     detailActivity.attendance.map((record) => (
-                      <div key={`${record.id}-${record.confirmedAt}`} className="rounded-2xl bg-mainBg px-4 py-3">
-                        <p className="font-medium text-textPrimary">{record.name}</p>
-                        <p className="text-sm text-textSecondary">{record.email}</p>
-                        <p className="text-xs text-textSecondary">Signed at: {formatDateTimeDDMMYYYY(record.confirmedAt)}</p>
+                      <div key={`${record.id}-${record.confirmedAt}`} className="rounded-lg border bg-muted/30 px-4 py-3">
+                        <p className="font-medium">{record.name}</p>
+                        <p className="text-sm text-muted-foreground">{record.email}</p>
+                        <p className="text-xs text-muted-foreground">Signed at: {formatDateTimeDDMMYYYY(record.confirmedAt)}</p>
                       </div>
                     ))
                   ) : (
-                    <p className="text-sm text-textSecondary">No attendance signed yet.</p>
+                    <p className="text-sm text-muted-foreground">No attendance signed yet.</p>
                   )}
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       ) : null}
     </div>

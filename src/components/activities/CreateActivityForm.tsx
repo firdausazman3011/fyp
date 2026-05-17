@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { fetchCsrfToken } from "@/lib/client-security";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export function CreateActivityForm() {
   const [message, setMessage] = useState<string | null>(null);
@@ -40,25 +43,38 @@ export function CreateActivityForm() {
   }
 
   return (
-    <form action={onSubmit} className="space-y-3 rounded-xl border border-borderUi bg-cardBg p-4">
-      <input name="title" placeholder="Title" className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
-      <textarea name="description" placeholder="Description" rows={4} className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <input name="date" type="date" className="rounded border border-borderUi px-3 py-2 text-sm" required />
-        <input name="time" type="time" className="rounded border border-borderUi px-3 py-2 text-sm" required />
-      </div>
-      <input name="location" placeholder="Location" className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
-      <input name="organizer" placeholder="Organizer" className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
-      <input name="imageUrl" placeholder="Image URL" className="w-full rounded border border-borderUi px-3 py-2 text-sm" required />
-      <select name="status" className="w-full rounded border border-borderUi px-3 py-2 text-sm">
-        <option value="DRAFT">Draft</option>
-        <option value="PUBLISHED">Published</option>
-        <option value="COMPLETED">Completed</option>
-        <option value="CANCELLED">Cancelled</option>
-      </select>
-      {error ? <p className="text-sm text-statusRejected">{error}</p> : null}
-      {message ? <p className="text-sm text-green-700">{message}</p> : null}
-      <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-white">Create Activity</button>
-    </form>
+    <Card>
+      <CardContent className="pt-6">
+        <form action={onSubmit} className="space-y-4">
+          <Input name="title" placeholder="Title" required />
+          <textarea
+            name="description"
+            placeholder="Description"
+            rows={4}
+            className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+            required
+          />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input name="date" type="date" required />
+            <Input name="time" type="time" required />
+          </div>
+          <Input name="location" placeholder="Location" required />
+          <Input name="organizer" placeholder="Organizer" required />
+          <Input name="imageUrl" placeholder="Image URL" required />
+          <select
+            name="status"
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            <option value="DRAFT">Draft</option>
+            <option value="PUBLISHED">Published</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+          </select>
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {message ? <p className="text-sm text-emerald-700">{message}</p> : null}
+          <Button type="submit">Create Activity</Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

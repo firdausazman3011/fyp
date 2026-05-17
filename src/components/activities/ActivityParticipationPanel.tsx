@@ -5,6 +5,7 @@ import { useState } from "react";
 import { fetchCsrfToken } from "@/lib/client-security";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
+import { Button } from "@/components/ui/button";
 
 type ActivityParticipationPanelProps = {
   activityId: string;
@@ -77,43 +78,28 @@ export function ActivityParticipationPanel({
 
   return (
     <>
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-2">
         {isJoined ? (
           <>
             {cancelled ? (
-              <p className="rounded-2xl bg-rose-50 px-3 py-2 text-sm text-statusRejected">
+              <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 This activity has been cancelled by the admin.
               </p>
             ) : (
               <>
-                <button
-                  type="button"
-                  onClick={() => setConfirmUnjoinOpen(true)}
-                  disabled={pending}
-                  className="rounded-full border border-primary px-5 py-2.5 text-sm font-semibold text-primary disabled:opacity-60"
-                >
+                <Button type="button" variant="outline" disabled={pending} onClick={() => setConfirmUnjoinOpen(true)}>
                   {pending ? "Please wait..." : "Unjoin Activity"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleAttendance}
-                  disabled={pending || hasAttendance || !canAttendNow}
-                  className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 disabled:cursor-not-allowed disabled:bg-primary/60"
-                >
+                </Button>
+                <Button type="button" disabled={pending || hasAttendance || !canAttendNow} onClick={handleAttendance}>
                   {hasAttendance ? "Attendance Signed" : canAttendNow ? "Sign Attendance" : "Attendance During Event"}
-                </button>
+                </Button>
               </>
             )}
           </>
         ) : (
-          <button
-            type="button"
-            onClick={handleJoin}
-            disabled={pending || cancelled || full}
-            className="rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/30 disabled:opacity-60"
-          >
+          <Button type="button" disabled={pending || cancelled || full} onClick={handleJoin}>
             {pending ? "Joining..." : full ? "Activity Full" : "Join Activity"}
-          </button>
+          </Button>
         )}
       </div>
 

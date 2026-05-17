@@ -1,5 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+
 type ConfirmDialogProps = {
   open: boolean;
   title: string;
@@ -23,33 +30,52 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  if (!open) return null;
+  const [mounted, setMounted] = useState(false);
 
-  return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4">
-      <div className="w-full max-w-md rounded-3xl border border-black/10 bg-white p-6 shadow-2xl">
-        <h2 className="text-xl font-semibold text-textPrimary">{title}</h2>
-        <p className="mt-2 text-sm leading-6 text-textSecondary">{description}</p>
-        {children ? <div className="mt-4">{children}</div> : null}
-        <div className="mt-6 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-full border border-black bg-white px-5 py-2.5 text-sm font-semibold text-black"
-          >
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
+  if (!open || !mounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]"
+      onMouseDown={(event) => event.stopPropagation()}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onCancel();
+      }}
+    >
+      <Card
+        className={cn("w-full max-w-md shadow-lg")}
+        role="dialog"
+        aria-modal="true"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <CardHeader>
+          <CardTitle className="text-lg">{title}</CardTitle>
+          <CardDescription className="text-base leading-relaxed">{description}</CardDescription>
+        </CardHeader>
+        {children ? <CardContent className="pt-0">{children}</CardContent> : null}
+        <CardFooter className="flex justify-end gap-2 border-t bg-muted/30 px-6 py-4">
+          <Button type="button" variant="outline" onClick={onCancel}>
             {cancelLabel}
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className={`rounded-full px-5 py-2.5 text-sm font-semibold text-white ${
-              tone === "danger" ? "bg-statusRejected" : "bg-black"
-            }`}
-          >
+          </Button>
+          <Button type="button" variant={tone === "danger" ? "destructive" : "default"} onClick={onConfirm}>
             {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>,
+    document.body,
   );
 }

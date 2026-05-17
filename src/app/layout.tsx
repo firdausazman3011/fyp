@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { Nunito } from "next/font/google";
+import { Inter } from "next/font/google";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 import { ToastProvider } from "@/components/ui/ToastProvider";
 
-const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "UniConnect",
@@ -17,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={nunito.className}>
+      <body className={cn(inter.variable, "min-h-screen bg-background font-sans")}>
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

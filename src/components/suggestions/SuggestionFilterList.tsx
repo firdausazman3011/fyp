@@ -4,6 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ReviewSuggestionActions } from "@/components/suggestions/ReviewSuggestionActions";
 import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 type SuggestionItem = {
   id: string;
@@ -47,47 +50,51 @@ export function SuggestionFilterList({ suggestions, statusClass }: Props) {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
         {(["APPROVED", "PENDING", "REJECTED", "CONVERTED"] as const).map((item) => (
-          <button
-            key={item}
-            type="button"
-            onClick={() => setFilter(item)}
-            className={`rounded-full border px-4 py-2 text-sm font-medium ${filter === item ? "border-black bg-black text-white" : "border-black/30 bg-white text-textPrimary"}`}
-          >
+          <Button key={item} type="button" variant={filter === item ? "default" : "outline"} size="sm" onClick={() => setFilter(item)}>
             {item[0] + item.slice(1).toLowerCase()}
-          </button>
+          </Button>
         ))}
       </div>
       <div className="grid gap-4 xl:grid-cols-2">
         {filtered.map((suggestion) => (
-          <article id={`admin-suggestion-${suggestion.id}`} key={suggestion.id} className="rounded-3xl border-2 border-[#6b4f3a] bg-cardBg p-5 shadow-sm">
-            <div className="flex items-start justify-between gap-3">
-              <p className="text-xl font-semibold text-textPrimary">{suggestion.title}</p>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClass[suggestion.displayStatus]}`}>
+          <Card id={`admin-suggestion-${suggestion.id}`} key={suggestion.id} className="shadow-sm">
+            <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
+              <CardTitle className="text-lg leading-snug">{suggestion.title}</CardTitle>
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-xs font-semibold",
+                  statusClass[suggestion.displayStatus],
+                )}
+              >
                 {suggestion.convertedDeleted ? "CONVERTED (DELETED)" : suggestion.displayStatus}
               </span>
-            </div>
-            <p className="mt-2 text-sm text-textSecondary">{suggestion.description}</p>
-            <div className="mt-4 grid gap-1 text-sm text-textSecondary">
-              <p>Submitted By: {suggestion.submittedBy.name} ({suggestion.submittedBy.email})</p>
-              <p>Submitted On: {formatDateTimeDDMMYYYY(suggestion.submittedAt)}</p>
-              <p>Suggested Location: {suggestion.location}</p>
-              <p>Suggested Date: {formatDateDDMMYYYY(suggestion.date)}</p>
-            </div>
-            <ReviewSuggestionActions
-              suggestionId={suggestion.id}
-              status={suggestion.status}
-              converted={Boolean(suggestion.convertedToId || suggestion.convertedAt)}
-            />
-          </article>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <p className="text-foreground/90">{suggestion.description}</p>
+              <div className="grid gap-1">
+                <p>
+                  Submitted By: {suggestion.submittedBy.name} ({suggestion.submittedBy.email})
+                </p>
+                <p>Submitted On: {formatDateTimeDDMMYYYY(suggestion.submittedAt)}</p>
+                <p>Suggested Location: {suggestion.location}</p>
+                <p>Suggested Date: {formatDateDDMMYYYY(suggestion.date)}</p>
+              </div>
+              <ReviewSuggestionActions
+                suggestionId={suggestion.id}
+                status={suggestion.status}
+                converted={Boolean(suggestion.convertedToId || suggestion.convertedAt)}
+              />
+            </CardContent>
+          </Card>
         ))}
       </div>
       {filtered.length === 0 ? (
-        <p className="rounded-2xl border-2 border-[#6b4f3a] bg-white p-4 text-sm text-textSecondary shadow-sm">
-          No suggestions available at the moment.
-        </p>
+        <Card className="border-dashed bg-muted/20 shadow-none">
+          <CardContent className="py-6 text-sm text-muted-foreground">No suggestions available at the moment.</CardContent>
+        </Card>
       ) : null}
     </div>
   );

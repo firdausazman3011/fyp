@@ -61,13 +61,19 @@ export function LoginForm() {
         required
       />
 
-      {error ? <p className="rounded-lg bg-rose-50 p-2 text-sm text-rose-700">{error}</p> : null}
+      {error ? (
+        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+      ) : null}
 
       <SubmitButton label="Login" pendingLabel="Logging in..." />
 
-      <div className="flex items-center justify-between text-sm">
-        <Link href="/signup" className="text-textSecondary hover:text-textPrimary">Create account</Link>
-        <Link href="/forgot-password" className="text-primary hover:opacity-90">Forgot password?</Link>
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
+        <Link href="/signup" className="underline-offset-4 transition-colors hover:text-foreground">
+          Create account
+        </Link>
+        <Link href="/forgot-password" className="font-medium text-primary underline-offset-4 hover:underline">
+          Forgot password?
+        </Link>
       </div>
     </form>
   );

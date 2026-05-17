@@ -2,6 +2,8 @@
 
 import { useFormStatus } from "react-dom";
 
+import { Button } from "@/components/ui/button";
+
 type SubmitButtonProps = {
   label: string;
   pendingLabel?: string;
@@ -11,12 +13,8 @@ export function SubmitButton({ label, pendingLabel = "Please wait..." }: SubmitB
   const { pending } = useFormStatus();
 
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="inline-flex w-full items-center justify-center rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
-    >
+    <Button type="submit" className="w-full" disabled={pending}>
       {pending ? pendingLabel : label}
-    </button>
+    </Button>
   );
 }
