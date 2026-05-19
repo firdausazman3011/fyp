@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { ActivityStatus, SuggestionStatus } from "@prisma/client";
+import { getActivityStart } from "@/lib/activity-time";
+import { parseDateOnlyInput } from "@/lib/date-only";
 
 export const STUDENT_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@siswa\.um\.edu\.my$/;
 export const ADMIN_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
@@ -97,16 +99,18 @@ const organizerSchema = z
   .min(2, "Organizer must be at least 2 characters.")
   .max(100, "Organizer must be at most 100 characters.");
 
-export function parseFutureDateTime(dateInput: string, timeInput: string) {
-  const parsed = new Date(`${dateInput}T${timeInput}:00`);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed;
+export function parseActivityDateOnly(dateInput: string) {
+  return parseDateOnlyInput(dateInput);
 }
 
-function parseDateOnly(dateInput: string) {
-  const parsed = new Date(`${dateInput}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return parsed;
+export function parseFutureDateTime(dateInput: string, timeInput: string) {
+  const activityDate = parseDateOnlyInput(dateInput);
+  if (!activityDate) return null;
+
+  const [hours, minutes] = timeInput.split(":").map((value) => Number(value));
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+
+  return getActivityStart(activityDate, timeInput);
 }
 
 const activitySchemaFields = {
@@ -160,7 +164,7 @@ export const suggestionSchema = z
     location: locationSchema,
   })
   .superRefine((value, ctx) => {
-    const parsed = parseDateOnly(value.date);
+    const parsed = parseDateOnlyInput(value.date);
     if (!parsed) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["date"], message: "Invalid date." });
       return;
@@ -188,3 +192,5 @@ export function toZodErrorMessage(error: unknown): string {
   }
   return "Invalid input.";
 }
+
+export { toZodFieldErrors, validationErrorResponse, fieldErrorResponse } from "@/lib/form-errors";

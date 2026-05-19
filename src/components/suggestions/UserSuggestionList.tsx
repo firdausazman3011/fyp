@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { fetchCsrfToken } from "@/lib/client-security";
+import type { FieldErrors } from "@/lib/form-errors";
+import { formatStatusLabel } from "@/lib/form-errors";
 import { useToast } from "@/components/ui/ToastProvider";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,6 +45,8 @@ export function UserSuggestionList({ initialSuggestions }: { initialSuggestions:
   const { showToast } = useToast();
   const [filter, setFilter] = useState<"APPROVED" | "PENDING" | "REJECTED" | "CANCELLED">("PENDING");
   const [editing, setEditing] = useState<SuggestionItem | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", description: "", date: "", location: "" });
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const filteredSuggestions = useMemo(
     () => initialSuggestions.filter((item) => item.displayStatus === filter),
@@ -60,23 +66,43 @@ export function UserSuggestionList({ initialSuggestions }: { initialSuggestions:
     }
   }, [initialSuggestions, searchParams]);
 
-  async function updateSuggestion(formData: FormData) {
+  function openEdit(suggestion: SuggestionItem) {
+    setFieldErrors({});
+    setEditing(suggestion);
+    setEditForm({
+      title: suggestion.title,
+      description: suggestion.description,
+      date: suggestion.date.slice(0, 10),
+      location: suggestion.location,
+    });
+  }
+
+  async function updateSuggestion(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (!editing) return;
+    setFieldErrors({});
+
     const csrfToken = await fetchCsrfToken();
-    if (!csrfToken) return showToast("Unable to update suggestion.", "error");
+    if (!csrfToken) {
+      setFieldErrors({ title: "Unable to update suggestion." });
+      return;
+    }
 
     const response = await fetch(`/api/suggestions/${editing.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
-      body: JSON.stringify({
-        title: formData.get("title"),
-        description: formData.get("description"),
-        date: formData.get("date"),
-        location: formData.get("location"),
-      }),
+      body: JSON.stringify(editForm),
     });
-    const data = (await response.json()) as { message?: string; error?: string };
-    if (!response.ok) return showToast(data.error ?? "Unable to update suggestion.", "error");
+    const data = (await response.json()) as { message?: string; error?: string; fieldErrors?: FieldErrors };
+    if (!response.ok) {
+      if (data.fieldErrors && Object.keys(data.fieldErrors).length > 0) {
+        setFieldErrors(data.fieldErrors);
+        return;
+      }
+      setFieldErrors({ title: data.error ?? "Unable to update suggestion." });
+      return;
+    }
+
     showToast(data.message ?? "Suggestion updated.", "success");
     setEditing(null);
     router.refresh();
@@ -100,93 +126,123 @@ export function UserSuggestionList({ initialSuggestions }: { initialSuggestions:
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        {(["APPROVED", "PENDING", "REJECTED", "CANCELLED"] as const).map((status) => (
-          <Button
-            key={status}
-            type="button"
-            variant={filter === status ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilter(status)}
-          >
-            {status[0] + status.slice(1).toLowerCase()}
-          </Button>
-        ))}
-      </div>
-      <div className="grid gap-4 xl:grid-cols-2">
-        {filteredSuggestions.map((suggestion) => (
-          <Card id={`suggestion-${suggestion.id}`} key={suggestion.id} className="shadow-sm">
-            <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
-              <CardTitle className="text-lg leading-snug">{suggestion.title}</CardTitle>
-              <span
-                className={cn(
-                  "inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-xs font-semibold",
-                  statusClass[suggestion.displayStatus],
-                )}
-              >
-                {suggestion.displayStatus}
-              </span>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm text-muted-foreground">
-              <p className="text-foreground/90">{suggestion.description}</p>
-              <div className="grid gap-1">
-                <p>Suggested Location: {suggestion.location}</p>
-                <p>Suggested Date: {formatDateDDMMYYYY(suggestion.date)}</p>
-              </div>
-              {suggestion.adminRemark ? <p className="text-xs">Admin remark: {suggestion.adminRemark}</p> : null}
-              {suggestion.status === "APPROVED" && suggestion.convertedAt && !suggestion.convertedToId ? (
-                <p className="text-xs text-amber-700">
-                  ⚠️ This activity was approved and created but later removed due to a lack of participant registration.
-                </p>
-              ) : null}
-              {suggestion.canModify ? (
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <Button type="button" size="sm" onClick={() => setEditing(suggestion)}>
-                    Edit
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" onClick={() => setDeleteId(suggestion.id)}>
-                    Delete
-                  </Button>
+      <div className="filter-stack">
+        <div className="flex flex-wrap gap-2">
+          {(["APPROVED", "PENDING", "REJECTED", "CANCELLED"] as const).map((status) => (
+            <Button
+              key={status}
+              type="button"
+              variant={filter === status ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilter(status)}
+            >
+              {formatStatusLabel(status)}
+            </Button>
+          ))}
+        </div>
+        <div className="content-grid">
+          {filteredSuggestions.map((suggestion) => (
+            <Card id={`suggestion-${suggestion.id}`} key={suggestion.id} className="shadow-sm">
+              <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
+                <CardTitle className="text-lg leading-snug">{suggestion.title}</CardTitle>
+                <span
+                  className={cn(
+                    "ml-auto inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-xs font-semibold",
+                    statusClass[suggestion.displayStatus],
+                  )}
+                >
+                  {formatStatusLabel(suggestion.displayStatus)}
+                </span>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <p className="text-foreground/90">{suggestion.description}</p>
+                <div className="grid gap-1">
+                  <p>Suggested Location: {suggestion.location}</p>
+                  <p>Suggested Date: {formatDateDDMMYYYY(suggestion.date)}</p>
                 </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        ))}
+                {suggestion.adminRemark ? <p className="text-xs">Admin remark: {suggestion.adminRemark}</p> : null}
+                {suggestion.status === "APPROVED" && suggestion.convertedAt && !suggestion.convertedToId ? (
+                  <p className="text-xs text-amber-700">
+                    This activity was approved and created but later removed due to a lack of participant registration.
+                  </p>
+                ) : null}
+                {suggestion.canModify ? (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Button type="button" size="sm" onClick={() => openEdit(suggestion)}>
+                      Edit
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" onClick={() => setDeleteId(suggestion.id)}>
+                      Delete
+                    </Button>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ))}
+          {filteredSuggestions.length === 0 ? (
+            <EmptyState message="No suggestions available at the moment." className="col-span-full" />
+          ) : null}
+        </div>
       </div>
-      {filteredSuggestions.length === 0 ? (
-        <Card className="border-dashed bg-muted/20 shadow-none">
-          <CardContent className="py-6 text-sm text-muted-foreground">No suggestions available at the moment.</CardContent>
-        </Card>
-      ) : null}
 
       {editing ? (
         <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px]">
           <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto shadow-lg">
-            <CardHeader>
+            <CardHeader className="relative space-y-0 pb-4 pr-12">
               <CardTitle>Edit Suggestion</CardTitle>
+              <Button type="button" variant="outline" size="sm" className="absolute right-4 top-4" onClick={() => setEditing(null)}>
+                Close
+              </Button>
             </CardHeader>
             <CardContent className="pt-0">
-              <form action={updateSuggestion} className="space-y-4">
+              <form onSubmit={updateSuggestion} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="edit-title">Title</Label>
-                  <Input id="edit-title" name="title" defaultValue={editing.title} required />
+                  <Input
+                    id="edit-title"
+                    name="title"
+                    value={editForm.title}
+                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                    required
+                  />
+                  <FieldError message={fieldErrors.title} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-description">Description</Label>
-                  <Textarea id="edit-description" name="description" defaultValue={editing.description} rows={4} required />
+                  <Textarea
+                    id="edit-description"
+                    name="description"
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    rows={4}
+                    required
+                  />
+                  <FieldError message={fieldErrors.description} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-date">Suggested Date</Label>
-                  <Input id="edit-date" name="date" type="date" defaultValue={editing.date.slice(0, 10)} required />
+                  <Input
+                    id="edit-date"
+                    name="date"
+                    type="date"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                    required
+                  />
+                  <FieldError message={fieldErrors.date} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-location">Suggested Location</Label>
-                  <Input id="edit-location" name="location" defaultValue={editing.location} required />
+                  <Input
+                    id="edit-location"
+                    name="location"
+                    value={editForm.location}
+                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                    required
+                  />
+                  <FieldError message={fieldErrors.location} />
                 </div>
-                <div className="flex justify-end gap-2 border-t pt-4">
-                  <Button type="button" variant="outline" onClick={() => setEditing(null)}>
-                    Close
-                  </Button>
+                <div className="flex justify-end border-t pt-4">
                   <Button type="submit">Save</Button>
                 </div>
               </form>

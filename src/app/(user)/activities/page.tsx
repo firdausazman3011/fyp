@@ -1,3 +1,4 @@
+import { serializeActivityDate } from "@/lib/date-format";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAuthUser } from "@/lib/auth";
 import { UserActivitiesTabs } from "@/components/activities/UserActivitiesTabs";
@@ -24,7 +25,7 @@ export default async function ActivitiesPage() {
         id: activity.id,
         title: activity.title,
         description: activity.description,
-        date: activity.date.toISOString(),
+        date: serializeActivityDate(activity.date),
         timeLabel: activity.timeLabel,
         durationMinutes: activity.durationMinutes,
         participantLimit: activity.participantLimit,

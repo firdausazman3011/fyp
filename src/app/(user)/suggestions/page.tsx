@@ -1,3 +1,4 @@
+import { serializeActivityDate } from "@/lib/date-format";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAuthUser } from "@/lib/auth";
 import { SuggestionForm } from "@/components/suggestions/SuggestionForm";
@@ -25,7 +26,7 @@ export default async function SuggestionsPage() {
       id: suggestion.id,
       title: suggestion.title,
       description: suggestion.description,
-      date: suggestion.date.toISOString(),
+      date: serializeActivityDate(suggestion.date),
       location: suggestion.location,
       status: suggestion.status,
       displayStatus,
@@ -38,7 +39,7 @@ export default async function SuggestionsPage() {
   });
 
   return (
-    <section className="space-y-8">
+    <section className="page-stack">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Activity Suggestion</h1>
         <p className="mt-2 text-sm text-muted-foreground">Propose activities for the community team to review.</p>

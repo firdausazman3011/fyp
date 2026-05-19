@@ -87,8 +87,13 @@ export function ActivityParticipationPanel({
               </p>
             ) : (
               <>
-                <Button type="button" variant="outline" disabled={pending} onClick={() => setConfirmUnjoinOpen(true)}>
-                  {pending ? "Please wait..." : "Unjoin Activity"}
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pending || hasAttendance}
+                  onClick={() => setConfirmUnjoinOpen(true)}
+                >
+                  {hasAttendance ? "Cannot Unjoin After Attendance" : pending ? "Please wait..." : "Unjoin Activity"}
                 </Button>
                 <Button type="button" disabled={pending || hasAttendance || !canAttendNow} onClick={handleAttendance}>
                   {hasAttendance ? "Attendance Signed" : canAttendNow ? "Sign Attendance" : "Attendance During Event"}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/authorization";
 import { prisma } from "@/lib/prisma";
 import { sanitizeText, validateCsrfOrThrow } from "@/lib/security";
-import { suggestionSchema, toZodErrorMessage } from "@/lib/validation";
+import { parseActivityDateOnly, suggestionSchema, toZodErrorMessage, validationErrorResponse } from "@/lib/validation";
 
 async function getOwnedSuggestion(userId: string, id: string) {
   return prisma.suggestion.findFirst({
@@ -38,12 +38,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       data: {
         title: sanitizeText(parsed.title),
         description: sanitizeText(parsed.description),
-        date: new Date(parsed.date),
+        date: parseActivityDateOnly(parsed.date)!,
         location: sanitizeText(parsed.location),
       },
     });
     return NextResponse.json({ message: "Suggestion updated.", suggestion });
   } catch (error) {
+    const validationResponse = validationErrorResponse(error);
+    if (validationResponse) return validationResponse;
     return NextResponse.json({ error: toZodErrorMessage(error) }, { status: 400 });
   }
 }

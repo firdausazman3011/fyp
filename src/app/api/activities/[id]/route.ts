@@ -3,9 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authorization";
 import { logAdminAction } from "@/lib/audit";
 import { sanitizeText, validateCsrfOrThrow } from "@/lib/security";
-import { parseFutureDateTime, toZodErrorMessage, updateActivitySchema } from "@/lib/validation";
+import { parseActivityDateOnly, toZodErrorMessage, updateActivitySchema, validationErrorResponse } from "@/lib/validation";
 import { ActivityStatus } from "@prisma/client";
-import { rangesOverlap } from "@/lib/activity-time";
+import { activityScheduleOverlaps } from "@/lib/activity-time";
+import { serializeActivityDate } from "@/lib/date-format";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, response } = await requireRole("ADMIN");
@@ -18,9 +19,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { id } = await params;
     const body = await request.json();
     const parsed = updateActivitySchema.parse(body);
-    const date = parseFutureDateTime(parsed.date, parsed.time);
-
-    if (!date) {
+    const activityDate = parseActivityDateOnly(parsed.date);
+    if (!activityDate) {
       return NextResponse.json({ error: "Invalid date/time." }, { status: 400 });
     }
 
@@ -36,20 +36,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "Cancelled activities cannot be resumed." }, { status: 400 });
     }
 
-    const dayStart = new Date(date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(23, 59, 59, 999);
     const sameDayActivities = await prisma.activity.findMany({
       where: {
         id: { not: id },
-        date: { gte: dayStart, lte: dayEnd },
+        date: activityDate,
         status: { not: ActivityStatus.CANCELLED },
       },
-      select: { date: true, durationMinutes: true },
+      select: { date: true, timeLabel: true, durationMinutes: true },
     });
     const hasOverlap = sameDayActivities.some((existing) =>
-      rangesOverlap(date, parsed.durationMinutes, existing.date, existing.durationMinutes),
+      activityScheduleOverlaps(
+        activityDate,
+        parsed.time,
+        parsed.durationMinutes,
+        existing.date,
+        existing.timeLabel,
+        existing.durationMinutes,
+      ),
     );
     if (hasOverlap) {
       return NextResponse.json(
@@ -63,7 +66,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       data: {
         title: sanitizeText(parsed.title),
         description: sanitizeText(parsed.description),
-        date,
+        date: activityDate,
         timeLabel: parsed.time,
         durationMinutes: parsed.durationMinutes,
         participantLimit: parsed.participantLimit,
@@ -95,7 +98,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       message: "Activity updated successfully.",
       activity: {
         ...activity,
-        date: activity.date.toISOString(),
+        date: serializeActivityDate(activity.date),
         durationMinutes: activity.durationMinutes,
         participantLimit: activity.participantLimit,
         participantCount: activity.participants.length,
@@ -108,6 +111,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       },
     });
   } catch (error) {
+    const validationResponse = validationErrorResponse(error);
+    if (validationResponse) return validationResponse;
     return NextResponse.json({ error: toZodErrorMessage(error) }, { status: 400 });
   }
 }

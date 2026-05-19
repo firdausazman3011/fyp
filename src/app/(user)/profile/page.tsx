@@ -12,7 +12,7 @@ export default async function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="space-y-8">
+    <div className="page-stack">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">View Profile</h1>
         <p className="mt-2 text-sm text-muted-foreground">Your public profile and account details.</p>

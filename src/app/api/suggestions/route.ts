@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { suggestionSchema, toZodErrorMessage } from "@/lib/validation";
+import { parseActivityDateOnly, suggestionSchema, toZodErrorMessage, validationErrorResponse } from "@/lib/validation";
 import { requireAuth, requireRole } from "@/lib/authorization";
 import { sanitizeText, validateCsrfOrThrow } from "@/lib/security";
 
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       data: {
         title: sanitizeText(parsed.title),
         description: sanitizeText(parsed.description),
-        date: new Date(parsed.date),
+        date: parseActivityDateOnly(parsed.date)!,
         location: sanitizeText(parsed.location),
         submittedById: user.userId,
       },
@@ -46,7 +46,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: "Suggestion submitted successfully.", suggestion }, { status: 201 });
   } catch (error) {
-    const message = toZodErrorMessage(error);
-    return NextResponse.json({ error: message }, { status: 400 });
+    const validationResponse = validationErrorResponse(error);
+    if (validationResponse) return validationResponse;
+    return NextResponse.json({ error: toZodErrorMessage(error) }, { status: 400 });
   }
 }

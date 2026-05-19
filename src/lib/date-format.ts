@@ -1,6 +1,21 @@
+import { formatDateOnlyValue, parseDateOnlyInput } from "@/lib/date-only";
+
 export function formatDateDDMMYYYY(value: Date | string) {
+  if (typeof value === "string") {
+    const dateOnly = parseDateOnlyInput(value);
+    if (dateOnly) {
+      return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC" }).format(dateOnly);
+    }
+  }
+
   const date = value instanceof Date ? value : new Date(value);
-  return new Intl.DateTimeFormat("en-GB").format(date);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "UTC" }).format(date);
+}
+
+export function serializeActivityDate(value: Date): string {
+  return formatDateOnlyValue(value);
 }
 
 export function formatDateTimeDDMMYYYY(value: Date | string) {

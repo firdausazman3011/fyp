@@ -7,6 +7,8 @@ import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { formatStatusLabel } from "@/lib/form-errors";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type SuggestionItem = {
   id: string;
@@ -50,15 +52,15 @@ export function SuggestionFilterList({ suggestions, statusClass }: Props) {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="filter-stack">
       <div className="flex flex-wrap gap-2">
         {(["APPROVED", "PENDING", "REJECTED", "CONVERTED"] as const).map((item) => (
           <Button key={item} type="button" variant={filter === item ? "default" : "outline"} size="sm" onClick={() => setFilter(item)}>
-            {item[0] + item.slice(1).toLowerCase()}
+            {formatStatusLabel(item)}
           </Button>
         ))}
       </div>
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="content-grid">
         {filtered.map((suggestion) => (
           <Card id={`admin-suggestion-${suggestion.id}`} key={suggestion.id} className="shadow-sm">
             <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
@@ -69,7 +71,7 @@ export function SuggestionFilterList({ suggestions, statusClass }: Props) {
                   statusClass[suggestion.displayStatus],
                 )}
               >
-                {suggestion.convertedDeleted ? "CONVERTED (DELETED)" : suggestion.displayStatus}
+                {suggestion.convertedDeleted ? formatStatusLabel("CONVERTED (DELETED)") : formatStatusLabel(suggestion.displayStatus)}
               </span>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-muted-foreground">
@@ -90,12 +92,10 @@ export function SuggestionFilterList({ suggestions, statusClass }: Props) {
             </CardContent>
           </Card>
         ))}
+        {filtered.length === 0 ? (
+          <EmptyState message="No suggestions available at the moment." className="col-span-full" />
+        ) : null}
       </div>
-      {filtered.length === 0 ? (
-        <Card className="border-dashed bg-muted/20 shadow-none">
-          <CardContent className="py-6 text-sm text-muted-foreground">No suggestions available at the moment.</CardContent>
-        </Card>
-      ) : null}
     </div>
   );
 }

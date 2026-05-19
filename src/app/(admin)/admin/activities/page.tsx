@@ -1,3 +1,4 @@
+import { serializeActivityDate } from "@/lib/date-format";
 import { prisma } from "@/lib/prisma";
 import { ActivityManager } from "@/components/activities/ActivityManager";
 
@@ -34,7 +35,7 @@ export default async function ManageActivitiesPage({
   });
 
   return (
-    <section className="space-y-8">
+    <section className="page-stack">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Manage Activities</h1>
         <p className="mt-2 text-sm text-muted-foreground">Create, edit, and monitor community activities.</p>
@@ -48,7 +49,7 @@ export default async function ManageActivitiesPage({
                 id: sourceSuggestion.id,
                 title: sourceSuggestion.title,
                 description: sourceSuggestion.description,
-                date: sourceSuggestion.date.toISOString(),
+                date: serializeActivityDate(sourceSuggestion.date),
                 location: sourceSuggestion.location,
               }
             : null
@@ -57,7 +58,7 @@ export default async function ManageActivitiesPage({
           id: activity.id,
           title: activity.title,
           description: activity.description,
-          date: activity.date.toISOString(),
+          date: serializeActivityDate(activity.date),
           timeLabel: activity.timeLabel,
           durationMinutes: activity.durationMinutes,
           participantLimit: activity.participantLimit,

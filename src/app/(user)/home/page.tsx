@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { SuggestionStatus } from "@prisma/client";
 import { getCurrentAuthUser } from "@/lib/auth";
+import { getLatestUpcomingActivities } from "@/lib/activities-query";
 import { prisma } from "@/lib/prisma";
 import { AppImage } from "@/components/ui/AppImage";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
+import { formatStatusLabel } from "@/lib/form-errors";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
 
 export default async function UserHomePage() {
@@ -13,17 +16,7 @@ export default async function UserHomePage() {
   if (!authUser) return null;
 
   const [upcoming, suggestions] = await Promise.all([
-    prisma.activity.findMany({
-      where: {
-        status: "PUBLISHED",
-        date: { gte: new Date() },
-      },
-      orderBy: { date: "asc" },
-      take: 4,
-      include: {
-        participants: true,
-      },
-    }),
+    getLatestUpcomingActivities(4),
     prisma.suggestion.findMany({
       where: { submittedById: authUser.userId },
       orderBy: { submittedAt: "desc" },
@@ -40,7 +33,7 @@ export default async function UserHomePage() {
   };
 
   return (
-    <section className="space-y-8">
+    <section className="page-stack">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Home</h1>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -86,7 +79,7 @@ export default async function UserHomePage() {
                               statusBadgeClass[displayStatus],
                             )}
                           >
-                            {displayStatus}
+                            {formatStatusLabel(displayStatus)}
                           </span>
                         </td>
                       </tr>
@@ -104,9 +97,9 @@ export default async function UserHomePage() {
           </div>
         </CardContent>
       </Card>
-      <div className="space-y-4">
+      <div className="filter-stack">
         <h2 className="text-lg font-semibold tracking-tight">Latest Activities</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="content-grid">
           {upcoming.map((activity) => (
             <Link key={activity.id} href={`/activities?focus=${activity.id}`} className="group block">
               <Card className="h-full overflow-hidden transition-shadow hover:shadow-md">
@@ -128,13 +121,11 @@ export default async function UserHomePage() {
               </Card>
             </Link>
           ))}
+          {upcoming.length === 0 ? (
+            <EmptyState message="No activities available at the moment. Stay tuned for upcoming events." className="col-span-full" />
+          ) : null}
         </div>
       </div>
-      {upcoming.length === 0 ? (
-        <Card className="border-dashed bg-muted/20 p-6 shadow-none">
-          <p className="text-sm text-muted-foreground">No activities available at the moment. Stay tuned for upcoming events.</p>
-        </Card>
-      ) : null}
     </section>
   );
 }

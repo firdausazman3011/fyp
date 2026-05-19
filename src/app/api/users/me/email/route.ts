@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authorization";
-import { changeEmailSchema, toZodErrorMessage } from "@/lib/validation";
+import { changeEmailSchema, fieldErrorResponse, toZodErrorMessage, validationErrorResponse } from "@/lib/validation";
 import { validateCsrfOrThrow } from "@/lib/security";
 import { createAdminEmailChangeToken } from "@/lib/admin-email-change";
 import { sendAdminEmailVerificationEmail } from "@/lib/email";
@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     });
     const currentPassword = String(body.currentPassword ?? "");
     if (!currentPassword) {
-      return NextResponse.json({ error: "Current password is required." }, { status: 400 });
+      return fieldErrorResponse({ currentPassword: "Current password is required." });
     }
 
     const dbUser = await prisma.user.findUnique({ where: { id: user.userId } });
@@ -30,10 +30,10 @@ export async function POST(request: Request) {
     }
     const validCurrent = await bcrypt.compare(currentPassword, dbUser.passwordHash);
     if (!validCurrent) {
-      return NextResponse.json({ error: "Current password is incorrect." }, { status: 400 });
+      return fieldErrorResponse({ currentPassword: "Current password is incorrect." });
     }
     if (dbUser.email.toLowerCase() === parsed.email.toLowerCase()) {
-      return NextResponse.json({ error: "New email must be different from current email." }, { status: 400 });
+      return fieldErrorResponse({ email: "New email must be different from current email." });
     }
 
     const existing = await prisma.user.findUnique({
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       select: { id: true },
     });
     if (existing && existing.id !== user.userId) {
-      return NextResponse.json({ error: "This email is already in use." }, { status: 400 });
+      return fieldErrorResponse({ email: "This email is already in use." });
     }
 
     const rawToken = await createAdminEmailChangeToken(user.userId, parsed.email);
@@ -49,8 +49,12 @@ export async function POST(request: Request) {
     const verifyUrl = `${appUrl}/api/users/me/email/verify?token=${rawToken}`;
     await sendAdminEmailVerificationEmail(parsed.email, verifyUrl);
 
-    return NextResponse.json({ message: "Verification link sent to the new admin email. Please verify to finish updating." });
+    return NextResponse.json({
+      message: "Verification link sent to the new email. Please verify to complete the update.",
+    });
   } catch (error) {
+    const validationResponse = validationErrorResponse(error);
+    if (validationResponse) return validationResponse;
     return NextResponse.json({ error: toZodErrorMessage(error) }, { status: 400 });
   }
 }

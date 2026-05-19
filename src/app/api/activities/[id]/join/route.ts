@@ -3,7 +3,7 @@ import { ActivityStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authorization";
 import { validateCsrfOrThrow } from "@/lib/security";
-import { rangesOverlap } from "@/lib/activity-time";
+import { activityScheduleOverlaps } from "@/lib/activity-time";
 
 export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, response } = await requireRole("USER");
@@ -22,25 +22,28 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
     return NextResponse.json({ error: "Activity is not open for joining." }, { status: 400 });
   }
 
-  const dayStart = new Date(activity.date);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(activity.date);
-  dayEnd.setHours(23, 59, 59, 999);
   const joinedSameDay = await prisma.activityParticipant.findMany({
     where: {
       userId: user.userId,
       activityId: { not: id },
       activity: {
-        date: { gte: dayStart, lte: dayEnd },
+        date: activity.date,
         status: { not: ActivityStatus.CANCELLED },
       },
     },
     include: {
-      activity: { select: { date: true, durationMinutes: true, title: true } },
+      activity: { select: { date: true, timeLabel: true, durationMinutes: true, title: true } },
     },
   });
   const hasOverlap = joinedSameDay.some((participant) =>
-    rangesOverlap(activity.date, activity.durationMinutes, participant.activity.date, participant.activity.durationMinutes),
+    activityScheduleOverlaps(
+      activity.date,
+      activity.timeLabel,
+      activity.durationMinutes,
+      participant.activity.date,
+      participant.activity.timeLabel,
+      participant.activity.durationMinutes,
+    ),
   );
   if (hasOverlap) {
     return NextResponse.json(

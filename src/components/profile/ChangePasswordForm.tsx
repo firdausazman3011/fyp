@@ -3,9 +3,10 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { fetchCsrfToken } from "@/lib/client-security";
-import { useToast } from "@/components/ui/ToastProvider";
+import type { FieldErrors } from "@/lib/form-errors";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { FieldError } from "@/components/ui/field-error";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -15,17 +16,23 @@ type ChangePasswordFormProps = {
 };
 
 export function ChangePasswordForm({ title, description }: ChangePasswordFormProps) {
-  const { showToast } = useToast();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setFieldErrors({});
+    setSuccessMessage(null);
+    setSubmitting(true);
 
     const csrfToken = await fetchCsrfToken();
     if (!csrfToken) {
-      showToast("Unable to change password.", "error");
+      setFieldErrors({ currentPassword: "Unable to change password." });
+      setSubmitting(false);
       return;
     }
 
@@ -37,16 +44,22 @@ export function ChangePasswordForm({ title, description }: ChangePasswordFormPro
       },
       body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
     });
-    const data = (await response.json()) as { message?: string; error?: string };
+    const data = (await response.json()) as { message?: string; error?: string; fieldErrors?: FieldErrors };
+    setSubmitting(false);
+
     if (!response.ok) {
-      showToast(data.error ?? "Unable to change password.", "error");
+      if (data.fieldErrors && Object.keys(data.fieldErrors).length > 0) {
+        setFieldErrors(data.fieldErrors);
+        return;
+      }
+      setFieldErrors({ currentPassword: data.error ?? "Unable to change password." });
       return;
     }
 
     setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
-    showToast(data.message ?? "Password changed successfully.", "success");
+    setSuccessMessage(data.message ?? "Password changed successfully.");
   }
 
   return (
@@ -67,6 +80,7 @@ export function ChangePasswordForm({ title, description }: ChangePasswordFormPro
               placeholder="Enter current password"
               required
             />
+            <FieldError message={fieldErrors.currentPassword} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="new-password">New Password</Label>
@@ -78,6 +92,7 @@ export function ChangePasswordForm({ title, description }: ChangePasswordFormPro
               placeholder="Enter new password"
               required
             />
+            <FieldError message={fieldErrors.newPassword} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm-password">Confirm New Password</Label>
@@ -89,13 +104,20 @@ export function ChangePasswordForm({ title, description }: ChangePasswordFormPro
               placeholder="Re-enter new password"
               required
             />
+            <FieldError message={fieldErrors.confirmPassword} />
           </div>
 
           <p className="text-xs text-muted-foreground">
             Rule enforced: password change requires current password and a strong new password.
           </p>
 
-          <Button type="submit">Update Password</Button>
+          {successMessage ? (
+            <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{successMessage}</p>
+          ) : null}
+
+          <Button type="submit" disabled={submitting}>
+            {submitting ? "Updating..." : "Update Password"}
+          </Button>
         </form>
       </CardContent>
     </Card>

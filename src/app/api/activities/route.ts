@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { ActivityStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { createActivitySchema, parseFutureDateTime, toZodErrorMessage } from "@/lib/validation";
+import { createActivitySchema, parseActivityDateOnly, toZodErrorMessage, validationErrorResponse } from "@/lib/validation";
 import { requireAuth, requireRole } from "@/lib/authorization";
 import { sanitizeText, validateCsrfOrThrow } from "@/lib/security";
 import { logAdminAction } from "@/lib/audit";
-import { rangesOverlap } from "@/lib/activity-time";
+import { activityScheduleOverlaps } from "@/lib/activity-time";
+import { getTodayDateOnly } from "@/lib/date-only";
+import { serializeActivityDate } from "@/lib/date-format";
 
 export async function GET() {
   const { user, response } = await requireAuth();
@@ -13,7 +15,7 @@ export async function GET() {
 
   const where =
     user.role === "USER"
-      ? { status: ActivityStatus.PUBLISHED, date: { gte: new Date() } }
+      ? { status: ActivityStatus.PUBLISHED, date: { gte: getTodayDateOnly() } }
       : undefined;
 
   const activities = await prisma.activity.findMany({
@@ -39,24 +41,27 @@ export async function POST(request: Request) {
       typeof body.sourceSuggestionId === "string" && body.sourceSuggestionId.trim().length > 0
         ? body.sourceSuggestionId.trim()
         : null;
-    const date = parseFutureDateTime(parsed.date, parsed.time);
-    if (!date) {
+    const activityDate = parseActivityDateOnly(parsed.date);
+    if (!activityDate) {
       return NextResponse.json({ error: "Invalid date/time." }, { status: 400 });
     }
 
-    const dayStart = new Date(date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(23, 59, 59, 999);
     const sameDayActivities = await prisma.activity.findMany({
       where: {
-        date: { gte: dayStart, lte: dayEnd },
+        date: activityDate,
         status: { not: ActivityStatus.CANCELLED },
       },
-      select: { date: true, durationMinutes: true },
+      select: { date: true, timeLabel: true, durationMinutes: true },
     });
     const hasOverlap = sameDayActivities.some((existing) =>
-      rangesOverlap(date, parsed.durationMinutes, existing.date, existing.durationMinutes),
+      activityScheduleOverlaps(
+        activityDate,
+        parsed.time,
+        parsed.durationMinutes,
+        existing.date,
+        existing.timeLabel,
+        existing.durationMinutes,
+      ),
     );
     if (hasOverlap) {
       return NextResponse.json(
@@ -69,7 +74,7 @@ export async function POST(request: Request) {
       data: {
         title: sanitizeText(parsed.title),
         description: sanitizeText(parsed.description),
-        date,
+        date: activityDate,
         timeLabel: parsed.time,
         durationMinutes: parsed.durationMinutes,
         participantLimit: parsed.participantLimit,
@@ -108,7 +113,7 @@ export async function POST(request: Request) {
         message: "Activity created successfully.",
         activity: {
           ...activity,
-          date: activity.date.toISOString(),
+          date: serializeActivityDate(activity.date),
           durationMinutes: activity.durationMinutes,
           participantLimit: activity.participantLimit,
           participantCount: 0,
@@ -120,7 +125,8 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    const message = toZodErrorMessage(error);
-    return NextResponse.json({ error: message }, { status: 400 });
+    const validationResponse = validationErrorResponse(error);
+    if (validationResponse) return validationResponse;
+    return NextResponse.json({ error: toZodErrorMessage(error) }, { status: 400 });
   }
 }

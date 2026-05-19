@@ -15,7 +15,7 @@ export default async function ReviewSuggestionsPage() {
   };
 
   return (
-    <section className="space-y-8">
+    <section className="page-stack">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Review Suggestions</h1>
         <p className="mt-2 text-sm text-muted-foreground">

@@ -2,51 +2,72 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 import { AuthInput } from "@/components/auth/AuthInput";
 import { SubmitButton } from "@/components/auth/SubmitButton";
 import { fetchCsrfToken } from "@/lib/client-security";
+import type { FieldErrors } from "@/lib/form-errors";
 
 export function SignupForm() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [success, setSuccess] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
-    setError(null);
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFieldErrors({});
     setSuccess(null);
+    setSubmitting(true);
+
     const csrfToken = await fetchCsrfToken();
     if (!csrfToken) {
-      setError("Unable to process request.");
+      setFieldErrors({ email: "Unable to process request." });
+      setSubmitting(false);
       return;
     }
 
     const response = await fetch("/api/auth/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
-      body: JSON.stringify({
-        name: formData.get("name"),
-        email: formData.get("email"),
-        password: formData.get("password"),
-      }),
+      body: JSON.stringify({ name, email, password }),
     });
 
-    const data = (await response.json()) as { message?: string; error?: string };
+    const data = (await response.json()) as { message?: string; error?: string; fieldErrors?: FieldErrors };
+    setSubmitting(false);
 
     if (!response.ok) {
-      setError(data.error ?? "Unable to create account.");
+      if (data.fieldErrors && Object.keys(data.fieldErrors).length > 0) {
+        setFieldErrors(data.fieldErrors);
+        return;
+      }
+      setFieldErrors({ email: data.error ?? "Unable to create account." });
       return;
     }
 
     setSuccess(data.message ?? "Account created successfully.");
-    router.push("/login");
-    router.refresh();
+    window.setTimeout(() => {
+      router.push("/login");
+      router.refresh();
+    }, 1500);
   }
 
   return (
-    <form action={handleSubmit} className="space-y-4">
-      <AuthInput id="name" label="Full Name" name="name" placeholder="Your full name" required />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <AuthInput
+        id="name"
+        label="Full Name"
+        name="name"
+        placeholder="Your full name"
+        value={name}
+        onChange={setName}
+        error={fieldErrors.name}
+        required
+      />
       <AuthInput
         id="email"
         label="University Email"
@@ -54,6 +75,9 @@ export function SignupForm() {
         type="email"
         placeholder="you@siswa.um.edu.my"
         autoComplete="email"
+        value={email}
+        onChange={setEmail}
+        error={fieldErrors.email}
         required
       />
       <AuthInput
@@ -63,19 +87,19 @@ export function SignupForm() {
         type="password"
         placeholder="Create a strong password"
         autoComplete="new-password"
+        value={password}
+        onChange={setPassword}
+        error={fieldErrors.password}
         required
       />
 
       <p className="text-xs text-muted-foreground">Must be 8+ chars with uppercase, lowercase, number, and symbol (!@#$%^&*).</p>
 
-      {error ? (
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
-      ) : null}
       {success ? (
         <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{success}</p>
       ) : null}
 
-      <SubmitButton label="Create account" pendingLabel="Creating account..." />
+      <SubmitButton label="Create account" pendingLabel="Creating account..." disabled={submitting || Boolean(success)} />
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}

@@ -1,8 +1,14 @@
 export function getActivityStart(date: Date, timeLabel: string) {
   const [hours, minutes] = timeLabel.split(":").map((value) => Number(value));
-  const start = new Date(date);
-  start.setHours(hours || 0, minutes || 0, 0, 0);
-  return start;
+  return new Date(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate(),
+    hours || 0,
+    minutes || 0,
+    0,
+    0,
+  );
 }
 
 export function getActivityEnd(date: Date, timeLabel: string, durationMinutes: number) {
@@ -29,4 +35,20 @@ export function rangesOverlap(
   const firstEnd = new Date(firstStart.getTime() + firstDurationMinutes * 60 * 1000);
   const secondEnd = new Date(secondStart.getTime() + secondDurationMinutes * 60 * 1000);
   return firstStart.getTime() < secondEnd.getTime() && secondStart.getTime() < firstEnd.getTime();
+}
+
+export function activityScheduleOverlaps(
+  firstDate: Date,
+  firstTime: string,
+  firstDurationMinutes: number,
+  secondDate: Date,
+  secondTime: string,
+  secondDurationMinutes: number,
+) {
+  return rangesOverlap(
+    getActivityStart(firstDate, firstTime),
+    firstDurationMinutes,
+    getActivityStart(secondDate, secondTime),
+    secondDurationMinutes,
+  );
 }

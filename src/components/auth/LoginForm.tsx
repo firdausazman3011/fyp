@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 
 import { AuthInput } from "@/components/auth/AuthInput";
 import { SubmitButton } from "@/components/auth/SubmitButton";
@@ -10,29 +10,35 @@ import { fetchCsrfToken } from "@/lib/client-security";
 
 export function LoginForm() {
   const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError(null);
+    setSubmitting(true);
+
     const csrfToken = await fetchCsrfToken();
     if (!csrfToken) {
       setError("Unable to login.");
+      setSubmitting(false);
       return;
     }
 
     const response = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-csrf-token": csrfToken },
-      body: JSON.stringify({
-        email: formData.get("email"),
-        password: formData.get("password"),
-      }),
+      body: JSON.stringify({ email, password }),
     });
 
     const data = (await response.json()) as { error?: string; role?: "USER" | "ADMIN" };
+    setSubmitting(false);
 
     if (!response.ok) {
-      setError(data.error ?? "Invalid email or password.");
+      setPassword("");
+      setError("Invalid email or password.");
       return;
     }
 
@@ -41,7 +47,7 @@ export function LoginForm() {
   }
 
   return (
-    <form action={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <AuthInput
         id="email"
         label="Email"
@@ -49,6 +55,8 @@ export function LoginForm() {
         type="email"
         placeholder="you@siswa.um.edu.my or admin email"
         autoComplete="email"
+        value={email}
+        onChange={setEmail}
         required
       />
       <AuthInput
@@ -58,14 +66,12 @@ export function LoginForm() {
         type="password"
         placeholder="Enter your password"
         autoComplete="current-password"
+        value={password}
+        onChange={setPassword}
+        error={error}
         required
       />
-
-      {error ? (
-        <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
-      ) : null}
-
-      <SubmitButton label="Login" pendingLabel="Logging in..." />
+      <SubmitButton label="Login" pendingLabel="Logging in..." isPending={submitting} />
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
         <Link href="/signup" className="underline-offset-4 transition-colors hover:text-foreground">

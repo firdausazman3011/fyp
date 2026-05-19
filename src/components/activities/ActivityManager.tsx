@@ -10,6 +10,9 @@ import { useToast } from "@/components/ui/ToastProvider";
 import { AppImage } from "@/components/ui/AppImage";
 import { isActivityCompleted } from "@/lib/activity-time";
 import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from "@/lib/date-format";
+import type { FieldErrors } from "@/lib/form-errors";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FieldError } from "@/components/ui/field-error";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,6 +88,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailActivityId, setDetailActivityId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   const sortedItems = useMemo(() => {
     const computed = items.map((item) => {
@@ -153,6 +157,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
 
   function resetForm() {
     setEditingId(null);
+    setFieldErrors({});
     setForm({
       title: "",
       description: "",
@@ -193,27 +198,24 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const formElement = event.currentTarget;
-    const durationInput = formElement.elements.namedItem("durationMinutes") as HTMLInputElement | null;
+    setFieldErrors({});
     const durationValue = Number(form.durationMinutes);
+    const nextErrors: FieldErrors = {};
+
     if (durationValue < 15) {
-      if (durationInput) {
-        durationInput.setCustomValidity("Value must be greater than or equal to 15.");
-        durationInput.reportValidity();
-      }
-      return;
-    }
-    if (durationInput) {
-      durationInput.setCustomValidity("");
+      nextErrors.durationMinutes = "Value must be greater than or equal to 15.";
     }
     if (!form.imageUrl.trim()) {
-      showToast("Please upload an activity image before saving.", "error");
+      nextErrors.imageUrl = "Please upload an activity image before saving.";
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
       return;
     }
 
     const csrfToken = await fetchCsrfToken();
     if (!csrfToken) {
-      showToast("Unable to save activity.", "error");
+      setFieldErrors({ title: "Unable to save activity." });
       return;
     }
 
@@ -241,9 +243,13 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
       }),
     });
 
-    const data = (await response.json()) as { message?: string; error?: string; activity?: ActivityItem };
+    const data = (await response.json()) as { message?: string; error?: string; fieldErrors?: FieldErrors; activity?: ActivityItem };
     if (!response.ok || !data.activity) {
-      showToast(data.error ?? "Unable to save activity.", "error");
+      if (data.fieldErrors && Object.keys(data.fieldErrors).length > 0) {
+        setFieldErrors(data.fieldErrors);
+        return;
+      }
+      setFieldErrors({ title: data.error ?? "Unable to save activity." });
       return;
     }
 
@@ -251,7 +257,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
       ...data.activity,
       title: submittedForm.title,
       description: submittedForm.description,
-      date: new Date(`${submittedForm.date}T${submittedForm.time}:00`).toISOString(),
+      date: submittedForm.date,
       timeLabel: submittedForm.time,
       durationMinutes: submittedForm.durationMinutes,
       participantLimit: submittedForm.participantLimit,
@@ -332,21 +338,13 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
   }
 
   return (
-    <div className="space-y-8">
+    <div className="page-stack">
       <div className="flex items-center">
         {!showForm ? (
           <Button type="button" onClick={() => setShowForm(true)}>
             Add New Activity
           </Button>
         ) : null}
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        {(["ACTIVE", "COMPLETED", "CANCELLED"] as const).map((filter) => (
-          <Button key={filter} type="button" variant={statusFilter === filter ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(filter)}>
-            {filter[0] + filter.slice(1).toLowerCase()}
-          </Button>
-        ))}
       </div>
 
       {showForm ? (
@@ -373,6 +371,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                       placeholder="Enter activity title"
                       required
                     />
+                    <FieldError message={fieldErrors.title} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="activity-organizer">Organizer</Label>
@@ -383,6 +382,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                       placeholder="Enter organizer name"
                       required
                     />
+                    <FieldError message={fieldErrors.organizer} />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -395,15 +395,18 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                     rows={4}
                     required
                   />
+                  <FieldError message={fieldErrors.description} />
                 </div>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="activity-date">Date</Label>
                     <Input id="activity-date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} type="date" required />
+                    <FieldError message={fieldErrors.date} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="activity-time">Time</Label>
                     <Input id="activity-time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} type="time" required />
+                    <FieldError message={fieldErrors.time} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="durationMinutes">Duration (Minutes)</Label>
@@ -420,6 +423,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                       pattern="[0-9]*"
                       required
                     />
+                    <FieldError message={fieldErrors.durationMinutes} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="participant-limit">Participant Limit</Label>
@@ -432,6 +436,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                       step={1}
                       required
                     />
+                    <FieldError message={fieldErrors.participantLimit} />
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -443,6 +448,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                     placeholder="Enter location"
                     required
                   />
+                  <FieldError message={fieldErrors.location} />
                 </div>
 
                 <div className="rounded-lg border border-dashed border-muted-foreground/25 bg-muted/30 p-4">
@@ -459,6 +465,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                   />
                   {uploading ? <p className="mt-2 text-sm text-primary">Uploading image...</p> : null}
                   {form.imageUrl ? <p className="mt-2 text-xs text-muted-foreground">Uploaded: {form.imageUrl}</p> : null}
+                  <FieldError message={fieldErrors.imageUrl} />
                 </div>
 
                 <div className="flex flex-wrap gap-2 border-t pt-4">
@@ -470,26 +477,40 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="filter-stack">
+        <div className="flex flex-wrap gap-2">
+          {(["ACTIVE", "COMPLETED", "CANCELLED"] as const).map((filter) => (
+            <Button key={filter} type="button" variant={statusFilter === filter ? "default" : "outline"} size="sm" onClick={() => setStatusFilter(filter)}>
+              {filter[0] + filter.slice(1).toLowerCase()}
+            </Button>
+          ))}
+        </div>
+
+        <div className="content-grid">
         {sortedItems.map((activity) => (
           <Card id={`admin-activity-${activity.id}`} key={activity.id} className="overflow-hidden shadow-sm">
             <div className="aspect-video w-full bg-muted">
               <AppImage src={activity.imageUrl} alt={activity.title} className="h-full w-full object-cover" />
             </div>
             <CardContent className="space-y-4 p-4 sm:p-5">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-lg font-semibold leading-tight">{activity.title}</h3>
-                  {activity.normalizedStatus === "CANCELLED" ? (
-                    <Badge variant="destructive">Cancelled</Badge>
-                  ) : activity.normalizedStatus === "COMPLETED" ? (
-                    <Badge variant="muted">Completed</Badge>
-                  ) : (
-                    <Badge variant="success">Active</Badge>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">{activity.description}</p>
-                <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
+              <div className="flex items-start justify-between gap-3">
+                <h3 className="min-w-0 flex-1 text-lg font-semibold leading-tight pr-2">{activity.title}</h3>
+                {activity.normalizedStatus === "CANCELLED" ? (
+                  <Badge variant="destructive" className="ml-auto shrink-0">
+                    Cancelled
+                  </Badge>
+                ) : activity.normalizedStatus === "COMPLETED" ? (
+                  <Badge variant="muted" className="ml-auto shrink-0">
+                    Completed
+                  </Badge>
+                ) : (
+                  <Badge variant="success" className="ml-auto shrink-0">
+                    Active
+                  </Badge>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground">{activity.description}</p>
+              <div className="grid gap-1 text-sm text-muted-foreground sm:grid-cols-2">
                   <p>Date: {formatDateDDMMYYYY(activity.date)}</p>
                   <p>Time: {activity.timeLabel}</p>
                   <p>Duration: {activity.durationMinutes} mins</p>
@@ -506,7 +527,6 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                     Attendance: {activity.attendanceCount}
                   </Button>
                 </div>
-              </div>
               <div className="flex flex-wrap gap-2">
                 {activity.normalizedStatus === "ACTIVE" ? (
                   <Button type="button" size="sm" onClick={() => fillForm(activity)}>
@@ -527,12 +547,11 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
             </CardContent>
           </Card>
         ))}
+        {sortedItems.length === 0 ? (
+          <EmptyState message="No activities available at the moment. Stay tuned for upcoming events." className="col-span-full" />
+        ) : null}
+        </div>
       </div>
-      {sortedItems.length === 0 ? (
-        <Card className="border-dashed bg-muted/20 shadow-none">
-          <CardContent className="py-6 text-sm text-muted-foreground">No activities available at the moment. Stay tuned for upcoming events.</CardContent>
-        </Card>
-      ) : null}
       <ConfirmDialog
         open={deleteId !== null}
         title="Delete Activity"

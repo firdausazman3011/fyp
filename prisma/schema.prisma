@@ -82,7 +82,7 @@ model Activity {
   id               String                @id @default(cuid())
   title            String
   description      String
-  date             DateTime
+  date             DateTime @db.Date
   timeLabel        String
   durationMinutes  Int                   @default(120)
   participantLimit Int                   @default(50)
@@ -129,7 +129,7 @@ model Suggestion {
   id              String           @id @default(cuid())
   title           String
   description     String
-  date            DateTime
+  date            DateTime @db.Date
   location        String
   status          SuggestionStatus @default(PENDING)
   adminRemark     String?

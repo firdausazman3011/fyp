@@ -10,6 +10,7 @@ import { formatDateDDMMYYYY } from "@/lib/date-format";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type ActivityItem = {
   id: string;
@@ -160,33 +161,47 @@ export function UserActivitiesTabs({ activities, authUserId }: Props) {
   }
 
   const emptyState = (
-    <Card className="border-dashed bg-muted/20 shadow-none">
-      <CardContent className="py-6 text-sm text-muted-foreground">No activities available at the moment. Stay tuned for upcoming events.</CardContent>
-    </Card>
+    <EmptyState message="No activities available at the moment. Stay tuned for upcoming events." className="col-span-full" />
   );
 
   return (
-    <section className="space-y-8">
+    <section className="page-stack">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Community Activities</h1>
         <p className="mt-2 text-sm text-muted-foreground">Browse all activities and manage your joined activities with full filters.</p>
       </div>
-      <div className="space-y-6">
+      <div className="filter-stack">
         <div className="flex flex-wrap gap-2">
-          <Button type="button" variant={sectionTab === "ACTIVITY" ? "default" : "outline"} size="sm" onClick={() => setSectionTab("ACTIVITY")}>
+          <Button
+            type="button"
+            variant={sectionTab === "ACTIVITY" ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setSectionTab("ACTIVITY");
+              setMyActivityFilter("ACTIVE");
+            }}
+          >
             Activity
           </Button>
-          <Button type="button" variant={sectionTab === "MY_ACTIVITY" ? "default" : "outline"} size="sm" onClick={() => setSectionTab("MY_ACTIVITY")}>
+          <Button
+            type="button"
+            variant={sectionTab === "MY_ACTIVITY" ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setSectionTab("MY_ACTIVITY");
+              setMyActivityFilter("ACTIVE");
+            }}
+          >
             My Activity
           </Button>
         </div>
         {sectionTab === "ACTIVITY" ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+          <div className="content-grid">
             {activityItems.length > 0 ? activityItems.map(renderCard) : emptyState}
           </div>
         ) : null}
         {sectionTab === "MY_ACTIVITY" ? (
-          <div className="space-y-4">
+          <div className="filter-stack">
             <div className="flex flex-wrap gap-2">
               <Button type="button" variant={myActivityFilter === "ACTIVE" ? "default" : "outline"} size="sm" onClick={() => setMyActivityFilter("ACTIVE")}>
                 Active
@@ -198,7 +213,7 @@ export function UserActivitiesTabs({ activities, authUserId }: Props) {
                 Cancelled
               </Button>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+            <div className="content-grid">
               {myActivityItems.length > 0 ? myActivityItems.map(renderCard) : emptyState}
             </div>
           </div>

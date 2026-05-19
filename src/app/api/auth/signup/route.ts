@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { validateCsrfOrThrow } from "@/lib/security";
-import { signupSchema, toZodErrorMessage } from "@/lib/validation";
+import { fieldErrorResponse, signupSchema, toZodFieldErrors, validationErrorResponse } from "@/lib/validation";
 
 export async function POST(request: Request) {
   try {
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     });
 
     if (process.env.ADMIN_EMAIL?.toLowerCase() === parsed.email) {
-      return NextResponse.json({ error: "Admin account is pre-created and cannot sign up." }, { status: 403 });
+      return fieldErrorResponse({ email: "Admin account is pre-created and cannot sign up." }, 403);
     }
 
     const passwordHash = await bcrypt.hash(parsed.password, 12);
@@ -33,21 +33,20 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(
-      { message: "Account created. You can now login." },
-      { status: 201 },
-    );
+    return NextResponse.json({ message: "Account created successfully." }, { status: 201 });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-      return NextResponse.json({ error: "Email already registered." }, { status: 409 });
+      return fieldErrorResponse({ email: "Email already registered." }, 409);
     }
 
-    const message = toZodErrorMessage(error);
-    const status = message === "Invalid input." ? 500 : 400;
+    const validationResponse = validationErrorResponse(error);
+    if (validationResponse) return validationResponse;
 
-    return NextResponse.json(
-      { error: status === 500 ? "Unable to create account." : message },
-      { status },
-    );
+    const fieldErrors = toZodFieldErrors(error);
+    if (Object.keys(fieldErrors).length > 0) {
+      return NextResponse.json({ error: "Unable to create account.", fieldErrors }, { status: 400 });
+    }
+
+    return NextResponse.json({ error: "Unable to create account." }, { status: 500 });
   }
 }

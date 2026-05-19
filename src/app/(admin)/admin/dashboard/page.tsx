@@ -1,25 +1,24 @@
 import { SuggestionStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { getLatestUpcomingActivities } from "@/lib/activities-query";
 import { isActivityCompleted } from "@/lib/activity-time";
 import { AppImage } from "@/components/ui/AppImage";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { formatStatusLabel } from "@/lib/form-errors";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default async function AdminDashboardPage() {
-  const [latestSuggestions, rawLatestActivities, suggestionCounts, allActivities] = await Promise.all([
+  const [latestSuggestions, latestActivities, suggestionCounts, allActivities] = await Promise.all([
     prisma.suggestion.findMany({
       orderBy: { submittedAt: "desc" },
       take: 5,
       include: { submittedBy: { select: { name: true } }, convertedTo: { select: { id: true } } },
     }),
-    prisma.activity.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 4,
-      include: { participants: true },
-    }),
+    getLatestUpcomingActivities(4),
     prisma.suggestion.findMany({
       select: { status: true, convertedToId: true, convertedAt: true },
     }),
@@ -27,9 +26,6 @@ export default async function AdminDashboardPage() {
       select: { status: true, date: true, timeLabel: true, durationMinutes: true },
     }),
   ]);
-  const latestActivities = rawLatestActivities
-    .filter((item) => item.status !== "CANCELLED" && !isActivityCompleted(item.date, item.timeLabel, item.durationMinutes))
-    .slice(0, 4);
   const suggestionSummary = {
     approved: suggestionCounts.filter((item) => item.status === SuggestionStatus.APPROVED && !item.convertedAt).length,
     pending: suggestionCounts.filter((item) => item.status === SuggestionStatus.PENDING && !item.convertedAt).length,
@@ -43,7 +39,7 @@ export default async function AdminDashboardPage() {
   };
 
   return (
-    <section className="space-y-8">
+    <section className="page-stack">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
         <p className="mt-2 text-sm text-muted-foreground">Overview of community activity and suggestions.</p>
@@ -172,6 +168,13 @@ export default async function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
+                {latestSuggestions.length === 0 ? (
+                  <tr>
+                    <td className="px-4 py-8 text-center text-muted-foreground sm:px-6" colSpan={4}>
+                      No suggestions available at the moment.
+                    </td>
+                  </tr>
+                ) : null}
                 {latestSuggestions.map((item) => (
                   <tr key={item.id} className="border-b border-border last:border-0">
                     <td className="px-4 py-3 font-medium sm:px-6">
@@ -197,7 +200,7 @@ export default async function AdminDashboardPage() {
                                 : "border-transparent bg-destructive/15 text-destructive",
                         )}
                       >
-                        {item.convertedAt ? (item.convertedTo ? "CONVERTED" : "CONVERTED (DELETED)") : item.status}
+                        {item.convertedAt ? (item.convertedTo ? formatStatusLabel("CONVERTED") : formatStatusLabel("CONVERTED (DELETED)")) : formatStatusLabel(item.status)}
                       </span>
                     </td>
                   </tr>
@@ -207,9 +210,9 @@ export default async function AdminDashboardPage() {
           </div>
         </CardContent>
       </Card>
-      <div className="space-y-4">
+      <div className="filter-stack">
         <h2 className="text-lg font-semibold tracking-tight">Latest Activities</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="content-grid">
           {latestActivities.map((item) => (
             <Link key={item.id} href={`/admin/activities?focus=${item.id}`} className="group block">
               <Card className="h-full overflow-hidden transition-shadow hover:shadow-md">
@@ -231,12 +234,10 @@ export default async function AdminDashboardPage() {
               </Card>
             </Link>
           ))}
+          {latestActivities.length === 0 ? (
+            <EmptyState message="No activities available at the moment. Stay tuned for upcoming events." className="col-span-full" />
+          ) : null}
         </div>
-        {latestActivities.length === 0 ? (
-          <Card className="border-dashed bg-muted/20 p-6 shadow-none">
-            <p className="text-sm text-muted-foreground">No activities available at the moment. Stay tuned for upcoming events.</p>
-          </Card>
-        ) : null}
       </div>
     </section>
   );
