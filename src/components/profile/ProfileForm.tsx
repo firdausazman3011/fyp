@@ -2,10 +2,10 @@
 
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
+import { clearProfileCache, getCachedProfile, setCachedProfile } from "@/lib/profile-cache";
 import { fetchCsrfToken } from "@/lib/client-security";
 import { uploadImageToStorage } from "@/lib/upload-image";
 import { useToast } from "@/components/ui/ToastProvider";
-import { useRouter } from "next/navigation";
 import { AppImage } from "@/components/ui/AppImage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +19,6 @@ type ProfileFormProps = {
 };
 
 export function ProfileForm({ initialName, email, initialProfilePicture }: ProfileFormProps) {
-  const router = useRouter();
   const { showToast } = useToast();
   const [name, setName] = useState(initialName);
   const [profilePicture, setProfilePicture] = useState(initialProfilePicture ?? "");
@@ -58,14 +57,28 @@ export function ProfileForm({ initialName, email, initialProfilePicture }: Profi
       },
       body: JSON.stringify({ name, profilePicture }),
     });
-    const data = (await response.json()) as { message?: string; error?: string };
+    const data = (await response.json()) as {
+      message?: string;
+      error?: string;
+      user?: { name: string; email: string; profilePicture: string | null };
+    };
     if (!response.ok) {
       showToast(data.error ?? "Unable to update profile.", "error");
       return;
     }
 
+    const cached = getCachedProfile();
+    if (cached && data.user) {
+      setCachedProfile({
+        ...cached,
+        name: data.user.name,
+        profilePicture: data.user.profilePicture,
+      });
+    } else {
+      clearProfileCache();
+    }
+    window.dispatchEvent(new Event("uniconnect-profile-updated"));
     showToast(data.message ?? "Profile updated successfully.", "success");
-    router.refresh();
   }
 
   return (

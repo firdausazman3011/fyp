@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
+import { clearProfileCache } from "@/lib/profile-cache";
 import { fetchCsrfToken } from "@/lib/client-security";
 import { cn } from "@/lib/utils";
 
@@ -36,10 +37,10 @@ export function LogoutButton({ className, variant = "default", size = "default" 
       return;
     }
 
+    clearProfileCache();
     setConfirmOpen(false);
     showToast("Logged out successfully.", "success");
-    router.push("/login");
-    router.refresh();
+    router.replace("/login");
   }
 
   return (

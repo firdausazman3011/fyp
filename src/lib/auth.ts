@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import {
   AUTH_COOKIE_NAME,
@@ -55,7 +56,7 @@ function getAuthFromMiddlewareHeaders(headerStore: Headers): AuthPayload | null 
  * Returns the current user. Prefers claims set by middleware (no JWT re-verify).
  * Falls back to cookie verification for API routes and non-middleware paths.
  */
-export async function getCurrentAuthUser(): Promise<AuthPayload | null> {
+export const getCurrentAuthUser = cache(async (): Promise<AuthPayload | null> => {
   const headerStore = await headers();
   const fromHeaders = getAuthFromMiddlewareHeaders(headerStore);
   if (fromHeaders) {
@@ -66,4 +67,4 @@ export async function getCurrentAuthUser(): Promise<AuthPayload | null> {
   const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
   if (!token) return null;
   return await verifyAuthToken(token);
-}
+});

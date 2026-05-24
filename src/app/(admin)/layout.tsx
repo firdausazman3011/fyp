@@ -1,15 +1,12 @@
-import { redirect } from "next/navigation";
-import { getCurrentAuthUser } from "@/lib/auth";
+import { Suspense } from "react";
 import { AppShell } from "@/components/layout/AppShell";
+import { ClientShellProfile } from "@/components/layout/ClientShellProfile";
+import { PageLoading } from "@/components/ui/page-loading";
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const authUser = await getCurrentAuthUser();
-  if (!authUser) redirect("/login");
-  if (authUser.role !== "ADMIN") redirect("/home");
-
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AppShell role="ADMIN" name={authUser.name} email={authUser.email} profilePicture={authUser.profilePicture}>
-      {children}
+    <AppShell role="ADMIN" profileSlot={<ClientShellProfile role="ADMIN" />}>
+      <Suspense fallback={<PageLoading />}>{children}</Suspense>
     </AppShell>
   );
 }
