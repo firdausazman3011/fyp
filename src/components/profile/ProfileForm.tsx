@@ -3,6 +3,7 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useState } from "react";
 import { fetchCsrfToken } from "@/lib/client-security";
+import { uploadImageToStorage } from "@/lib/upload-image";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useRouter } from "next/navigation";
 import { AppImage } from "@/components/ui/AppImage";
@@ -30,23 +31,8 @@ export function ProfileForm({ initialName, email, initialProfilePicture }: Profi
     setUploading(true);
 
     try {
-      const csrfToken = await fetchCsrfToken();
-      if (!csrfToken) throw new Error("Unable to upload image.");
-
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/uploads", {
-        method: "POST",
-        headers: { "x-csrf-token": csrfToken },
-        body: formData,
-      });
-      const data = (await response.json()) as { imageUrl?: string; error?: string };
-      if (!response.ok || !data.imageUrl) {
-        throw new Error(data.error ?? "Upload failed.");
-      }
-
-      setProfilePicture(data.imageUrl);
+      const imageUrl = await uploadImageToStorage(file);
+      setProfilePicture(imageUrl);
       showToast("Profile picture uploaded. Save profile to apply it.", "success");
     } catch (uploadError) {
       showToast(uploadError instanceof Error ? uploadError.message : "Unable to upload image.", "error");

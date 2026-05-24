@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ActivityStatus } from "@prisma/client";
 import { fetchCsrfToken } from "@/lib/client-security";
+import { uploadImageToStorage } from "@/lib/upload-image";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
 import { AppImage } from "@/components/ui/AppImage";
@@ -44,27 +45,6 @@ type ActivityManagerProps = {
   initialFocusId?: string | null;
   sourceSuggestion?: { id: string; title: string; description: string; date: string; location: string } | null;
 };
-
-async function uploadImage(file: File) {
-  const csrfToken = await fetchCsrfToken();
-  if (!csrfToken) {
-    throw new Error("Unable to upload image.");
-  }
-
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const response = await fetch("/api/uploads", {
-    method: "POST",
-    headers: { "x-csrf-token": csrfToken },
-    body: formData,
-  });
-  const data = (await response.json()) as { imageUrl?: string; error?: string };
-  if (!response.ok || !data.imageUrl) {
-    throw new Error(data.error ?? "Upload failed.");
-  }
-  return data.imageUrl;
-}
 
 export function ActivityManager({ activities, initialEditId = null, initialFocusId = null, sourceSuggestion = null }: ActivityManagerProps) {
   const router = useRouter();
@@ -186,7 +166,7 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
     if (!file) return;
     setUploading(true);
     try {
-      const imageUrl = await uploadImage(file);
+      const imageUrl = await uploadImageToStorage(file);
       setForm((current) => ({ ...current, imageUrl }));
       showToast("Image uploaded successfully.", "success");
     } catch (uploadError) {
