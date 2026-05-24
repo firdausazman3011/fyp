@@ -6,13 +6,9 @@ import { useState, type FormEvent } from "react";
 
 import { AuthInput } from "@/components/auth/AuthInput";
 import { SubmitButton } from "@/components/auth/SubmitButton";
+import { fetchCsrfToken } from "@/lib/client-security";
 
-type LoginFormProps = {
-  /** Injected by server component login/page.tsx — never fetched client-side. */
-  csrfToken: string;
-};
-
-export function LoginForm({ csrfToken }: LoginFormProps) {
+export function LoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,6 +19,8 @@ export function LoginForm({ csrfToken }: LoginFormProps) {
     event.preventDefault();
     setError(null);
     setSubmitting(true);
+
+    const csrfToken = await fetchCsrfToken();
 
     if (!csrfToken) {
       setError("Unable to login.");
@@ -50,7 +48,6 @@ export function LoginForm({ csrfToken }: LoginFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <input type="hidden" name="csrf-token" value={csrfToken} readOnly />
       <AuthInput
         id="email"
         label="Email"

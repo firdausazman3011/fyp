@@ -103,15 +103,22 @@ export async function getAdminActivitiesPage() {
   const rows = await prisma.activity.findMany({
     orderBy: { date: "asc" },
     take: ADMIN_ACTIVITIES_PAGE_SIZE,
-    include: {
-      participants: {
-        include: {
-          user: { select: { id: true, name: true, email: true } },
-        },
-      },
-      attendance: {
-        include: {
-          user: { select: { id: true, name: true, email: true } },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      date: true,
+      timeLabel: true,
+      durationMinutes: true,
+      participantLimit: true,
+      location: true,
+      organizer: true,
+      imageUrl: true,
+      status: true,
+      _count: {
+        select: {
+          participants: true,
+          attendance: true,
         },
       },
     },
@@ -129,12 +136,7 @@ export async function getAdminActivitiesPage() {
     organizer: activity.organizer,
     imageUrl: activity.imageUrl,
     status: activity.status,
-    participantCount: activity.participants.length,
-    attendanceCount: activity.attendance.length,
-    participants: activity.participants.map((participant) => participant.user),
-    attendance: activity.attendance.map((record) => ({
-      ...record.user,
-      confirmedAt: record.confirmedAt.toISOString(),
-    })),
+    participantCount: activity._count.participants,
+    attendanceCount: activity._count.attendance,
   }));
 }

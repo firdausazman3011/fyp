@@ -35,6 +35,11 @@ type ActivityItem = {
   status: ActivityStatus;
   participantCount: number;
   attendanceCount: number;
+};
+
+type ActivityDetail = {
+  id: string;
+  title: string;
   participants: Array<{ id: string; name: string; email: string }>;
   attendance: Array<{ id: string; name: string; email: string; confirmedAt: string }>;
 };
@@ -67,6 +72,9 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [cancelId, setCancelId] = useState<string | null>(null);
   const [detailActivityId, setDetailActivityId] = useState<string | null>(null);
+  const [detailCache, setDetailCache] = useState<Record<string, ActivityDetail>>({});
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
@@ -117,6 +125,30 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [sourceSuggestion]);
+
+  async function openDetail(activityId: string) {
+    setDetailActivityId(activityId);
+    setDetailError(null);
+
+    if (detailCache[activityId]) {
+      return;
+    }
+
+    setDetailLoading(true);
+    try {
+      const response = await fetch(`/api/activities/${activityId}`, { cache: "no-store" });
+      const data = (await response.json()) as { error?: string; activity?: ActivityDetail };
+      if (!response.ok || !data.activity) {
+        setDetailError(data.error ?? "Unable to load activity details.");
+        return;
+      }
+      setDetailCache((current) => ({ ...current, [activityId]: data.activity! }));
+    } catch {
+      setDetailError("Unable to load activity details.");
+    } finally {
+      setDetailLoading(false);
+    }
+  }
 
   function fillForm(activity: ActivityItem) {
     setEditingId(activity.id);
@@ -497,10 +529,10 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
                   </p>
                   <p>Location: {activity.location}</p>
                   <p>Organizer: {activity.organizer}</p>
-                  <Button type="button" variant="outline" size="sm" className="justify-start text-left font-normal" onClick={() => setDetailActivityId(activity.id)}>
+                  <Button type="button" variant="outline" size="sm" className="justify-start text-left font-normal" onClick={() => void openDetail(activity.id)}>
                     Participants: {activity.participantCount}
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="justify-start text-left font-normal" onClick={() => setDetailActivityId(activity.id)}>
+                  <Button type="button" variant="outline" size="sm" className="justify-start text-left font-normal" onClick={() => void openDetail(activity.id)}>
                     Attendance: {activity.attendanceCount}
                   </Button>
                 </div>
@@ -571,8 +603,12 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Participants</h3>
                 <div className="mt-3 space-y-2">
-                  {detailActivity.participants.length ? (
-                    detailActivity.participants.map((participant) => (
+                  {detailLoading && !detailCache[detailActivity.id] ? (
+                    <p className="text-sm text-muted-foreground">Loading participants...</p>
+                  ) : detailError ? (
+                    <p className="text-sm text-destructive">{detailError}</p>
+                  ) : detailCache[detailActivity.id]?.participants.length ? (
+                    detailCache[detailActivity.id].participants.map((participant) => (
                       <div key={participant.id} className="rounded-lg border bg-muted/30 px-4 py-3">
                         <p className="font-medium">{participant.name}</p>
                         <p className="text-sm text-muted-foreground">{participant.email}</p>
@@ -586,8 +622,12 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Attendance</h3>
                 <div className="mt-3 space-y-2">
-                  {detailActivity.attendance.length ? (
-                    detailActivity.attendance.map((record) => (
+                  {detailLoading && !detailCache[detailActivity.id] ? (
+                    <p className="text-sm text-muted-foreground">Loading attendance...</p>
+                  ) : detailError ? (
+                    <p className="text-sm text-destructive">{detailError}</p>
+                  ) : detailCache[detailActivity.id]?.attendance.length ? (
+                    detailCache[detailActivity.id].attendance.map((record) => (
                       <div key={`${record.id}-${record.confirmedAt}`} className="rounded-lg border bg-muted/30 px-4 py-3">
                         <p className="font-medium">{record.name}</p>
                         <p className="text-sm text-muted-foreground">{record.email}</p>

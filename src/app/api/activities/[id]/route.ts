@@ -9,6 +9,47 @@ import { activityScheduleOverlaps } from "@/lib/activity-time";
 import { serializeActivityDate } from "@/lib/date-format";
 import { revalidateActivityRoutes } from "@/lib/revalidate-routes";
 
+export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { user, response } = await requireRole("ADMIN");
+  if (response || !user) return response;
+
+  const { id } = await params;
+  const activity = await prisma.activity.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      title: true,
+      participants: {
+        select: {
+          user: { select: { id: true, name: true, email: true } },
+        },
+      },
+      attendance: {
+        select: {
+          confirmedAt: true,
+          user: { select: { id: true, name: true, email: true } },
+        },
+      },
+    },
+  });
+
+  if (!activity) {
+    return NextResponse.json({ error: "Activity not found." }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    activity: {
+      id: activity.id,
+      title: activity.title,
+      participants: activity.participants.map((participant) => participant.user),
+      attendance: activity.attendance.map((record) => ({
+        ...record.user,
+        confirmedAt: record.confirmedAt.toISOString(),
+      })),
+    },
+  });
+}
+
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, response } = await requireRole("ADMIN");
   if (response || !user) return response;
@@ -76,19 +117,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         imageUrl: parsed.imageUrl.trim(),
         status: parsed.status,
       },
-      include: {
-        participants: {
-          include: {
-            user: {
-              select: { id: true, name: true, email: true },
-            },
-          },
-        },
-        attendance: {
-          include: {
-            user: {
-              select: { id: true, name: true, email: true },
-            },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        date: true,
+        timeLabel: true,
+        durationMinutes: true,
+        participantLimit: true,
+        location: true,
+        organizer: true,
+        imageUrl: true,
+        status: true,
+        _count: {
+          select: {
+            participants: true,
+            attendance: true,
           },
         },
       },
@@ -103,13 +147,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         date: serializeActivityDate(activity.date),
         durationMinutes: activity.durationMinutes,
         participantLimit: activity.participantLimit,
-        participantCount: activity.participants.length,
-        attendanceCount: activity.attendance.length,
-        participants: activity.participants.map((participant) => participant.user),
-        attendance: activity.attendance.map((record) => ({
-          ...record.user,
-          confirmedAt: record.confirmedAt.toISOString(),
-        })),
+        participantCount: activity._count.participants,
+        attendanceCount: activity._count.attendance,
       },
     });
   } catch (error) {
