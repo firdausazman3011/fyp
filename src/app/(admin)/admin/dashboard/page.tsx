@@ -1,8 +1,7 @@
-import { SuggestionStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { getLatestUpcomingActivities } from "@/lib/activities-query";
-import { isActivityCompleted } from "@/lib/activity-time";
+import { getActivityStatusSummary, getSuggestionStatusSummary } from "@/lib/dashboard-stats";
 import { AppImage } from "@/components/ui/AppImage";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
 import { Badge } from "@/components/ui/badge";
@@ -12,31 +11,24 @@ import { formatStatusLabel } from "@/lib/form-errors";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export default async function AdminDashboardPage() {
-  const [latestSuggestions, latestActivities, suggestionCounts, allActivities] = await Promise.all([
+  const [latestSuggestions, latestActivities, suggestionSummary, activitySummary] = await Promise.all([
     prisma.suggestion.findMany({
       orderBy: { submittedAt: "desc" },
       take: 5,
-      include: { submittedBy: { select: { name: true } }, convertedTo: { select: { id: true } } },
+      select: {
+        id: true,
+        title: true,
+        date: true,
+        location: true,
+        status: true,
+        convertedAt: true,
+        convertedTo: { select: { id: true } },
+      },
     }),
     getLatestUpcomingActivities(4),
-    prisma.suggestion.findMany({
-      select: { status: true, convertedToId: true, convertedAt: true },
-    }),
-    prisma.activity.findMany({
-      select: { status: true, date: true, timeLabel: true, durationMinutes: true },
-    }),
+    getSuggestionStatusSummary(),
+    getActivityStatusSummary(),
   ]);
-  const suggestionSummary = {
-    approved: suggestionCounts.filter((item) => item.status === SuggestionStatus.APPROVED && !item.convertedAt).length,
-    pending: suggestionCounts.filter((item) => item.status === SuggestionStatus.PENDING && !item.convertedAt).length,
-    rejected: suggestionCounts.filter((item) => item.status === SuggestionStatus.REJECTED && !item.convertedAt).length,
-    converted: suggestionCounts.filter((item) => Boolean(item.convertedAt)).length,
-  };
-  const activitySummary = {
-    active: allActivities.filter((item) => item.status !== "CANCELLED" && !isActivityCompleted(item.date, item.timeLabel, item.durationMinutes)).length,
-    completed: allActivities.filter((item) => item.status !== "CANCELLED" && isActivityCompleted(item.date, item.timeLabel, item.durationMinutes)).length,
-    cancelled: allActivities.filter((item) => item.status === "CANCELLED").length,
-  };
 
   return (
     <section className="page-stack">

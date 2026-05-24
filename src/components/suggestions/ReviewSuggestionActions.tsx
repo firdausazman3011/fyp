@@ -42,7 +42,6 @@ export function ReviewSuggestionActions({ suggestionId, status, converted }: Pro
     setCurrentStatus(next);
     setConfirmRejectOpen(false);
     showToast(data.message ?? "Suggestion updated.", "success");
-    router.refresh();
   }
 
   async function convert() {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { fetchCsrfToken } from "@/lib/client-security";
 import type { FieldErrors } from "@/lib/form-errors";
@@ -19,7 +18,6 @@ const emptyForm = {
 };
 
 export function SuggestionForm() {
-  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -62,7 +60,6 @@ export function SuggestionForm() {
 
     setForm(emptyForm);
     closeForm();
-    router.refresh();
   }
 
   return (

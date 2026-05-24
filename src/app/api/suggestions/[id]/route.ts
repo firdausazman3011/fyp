@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/authorization";
 import { prisma } from "@/lib/prisma";
 import { sanitizeText, validateCsrfOrThrow } from "@/lib/security";
 import { parseActivityDateOnly, suggestionSchema, toZodErrorMessage, validationErrorResponse } from "@/lib/validation";
+import { revalidateSuggestionRoutes } from "@/lib/revalidate-routes";
 
 async function getOwnedSuggestion(userId: string, id: string) {
   return prisma.suggestion.findFirst({
@@ -42,6 +43,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         location: sanitizeText(parsed.location),
       },
     });
+    revalidateSuggestionRoutes();
     return NextResponse.json({ message: "Suggestion updated.", suggestion });
   } catch (error) {
     const validationResponse = validationErrorResponse(error);
@@ -65,5 +67,6 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   }
 
   await prisma.suggestion.delete({ where: { id } });
+  revalidateSuggestionRoutes();
   return NextResponse.json({ message: "Suggestion deleted." });
 }

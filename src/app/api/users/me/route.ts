@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { createAuthToken, setAuthCookie } from "@/lib/auth";
 import { requireRole } from "@/lib/authorization";
 import { profileUpdateSchema, toZodErrorMessage } from "@/lib/validation";
 import { sanitizeText, validateCsrfOrThrow } from "@/lib/security";
@@ -27,6 +28,15 @@ export async function PATCH(request: Request) {
         profilePicture: true,
       },
     });
+
+    const token = await createAuthToken({
+      userId: user.userId,
+      email: user.email,
+      role: user.role,
+      name: updatedUser.name,
+      profilePicture: updatedUser.profilePicture,
+    });
+    await setAuthCookie(token);
 
     return NextResponse.json({ message: "Profile updated successfully.", user: updatedUser });
   } catch (error) {

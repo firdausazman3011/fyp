@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authorization";
 import { validateCsrfOrThrow } from "@/lib/security";
 import { isActivityActiveNow } from "@/lib/activity-time";
+import { revalidateActivityRoutes } from "@/lib/revalidate-routes";
 
 export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, response } = await requireRole("USER");
@@ -47,5 +48,6 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
     },
   });
 
+  revalidateActivityRoutes();
   return NextResponse.json({ message: "Attendance signed successfully." });
 }

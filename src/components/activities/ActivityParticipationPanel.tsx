@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { fetchCsrfToken } from "@/lib/client-security";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
@@ -24,7 +23,6 @@ export function ActivityParticipationPanel({
   cancelled,
   full,
 }: ActivityParticipationPanelProps) {
-  const router = useRouter();
   const { showToast } = useToast();
   const [isJoined, setIsJoined] = useState(joined);
   const [hasAttendance, setHasAttendance] = useState(attendanceSigned);
@@ -52,7 +50,6 @@ export function ActivityParticipationPanel({
     }
 
     showToast(data.message ?? successMessage, "success");
-    router.refresh();
     return true;
   }
 

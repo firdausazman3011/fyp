@@ -24,28 +24,27 @@ type ActivityItem = {
   organizer: string;
   imageUrl: string;
   status: ActivityStatus;
-  participants: Array<{ userId: string }>;
+  participantCount: number;
+  joined: boolean;
   attendanceSigned: boolean;
 };
 
 type Props = {
   activities: ActivityItem[];
-  authUserId: string;
 };
 
-export function UserActivitiesTabs({ activities, authUserId }: Props) {
+export function UserActivitiesTabs({ activities }: Props) {
   const searchParams = useSearchParams();
   const [sectionTab, setSectionTab] = useState<"ACTIVITY" | "MY_ACTIVITY">("ACTIVITY");
   const [myActivityFilter, setMyActivityFilter] = useState<"ACTIVE" | "COMPLETED" | "CANCELLED">("ACTIVE");
   const normalizedItems = useMemo(() => {
     return activities.map((activity) => {
-      const joined = activity.participants.some((participant) => participant.userId === authUserId);
       const completed = getActivityEnd(new Date(activity.date), activity.timeLabel, activity.durationMinutes).getTime() < Date.now();
       const normalizedStatus =
         activity.status === ActivityStatus.CANCELLED ? "CANCELLED" : completed ? "COMPLETED" : "ACTIVE";
-      return { ...activity, joined, completed, normalizedStatus };
+      return { ...activity, completed, normalizedStatus };
     });
-  }, [activities, authUserId]);
+  }, [activities]);
   const activityItems = useMemo(
     () =>
       normalizedItems.filter((activity) => {
@@ -82,7 +81,7 @@ export function UserActivitiesTabs({ activities, authUserId }: Props) {
     const joined = activity.joined;
     const canAttendNow = isActivityActiveNow(new Date(activity.date), activity.timeLabel, activity.durationMinutes, new Date());
     const endTime = getActivityEnd(new Date(activity.date), activity.timeLabel, activity.durationMinutes);
-    const isFull = activity.participants.length >= activity.participantLimit;
+    const isFull = activity.participantCount >= activity.participantLimit;
     const completed = activity.normalizedStatus === "COMPLETED";
 
     function statusBadge() {
@@ -139,7 +138,7 @@ export function UserActivitiesTabs({ activities, authUserId }: Props) {
           <p>Attendance window ends at {endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
           <p>Organizer: {activity.organizer}</p>
           <p>
-            Participants: {activity.participants.length}/{activity.participantLimit} ({isFull ? "Full" : "Open"})
+            Participants: {activity.participantCount}/{activity.participantLimit} ({isFull ? "Full" : "Open"})
           </p>
           {!completed ? (
             <ActivityParticipationPanel

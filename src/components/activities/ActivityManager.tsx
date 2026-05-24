@@ -255,7 +255,6 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
     }
     resetForm();
     router.replace(`/admin/activities?focus=${data.activity.id}`);
-    router.refresh();
   }
 
   async function onDelete(id: string) {
@@ -279,7 +278,6 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
     showToast(data.message ?? "Activity deleted successfully.", "success");
     resetForm();
     setDeleteId(null);
-    router.refresh();
   }
 
   async function onCancelActivity(activity: ActivityItem) {
@@ -314,7 +312,6 @@ export function ActivityManager({ activities, initialEditId = null, initialFocus
 
     setItems((current) => current.map((item) => (item.id === data.activity?.id ? data.activity : item)));
     showToast("Activity cancelled.", "success");
-    router.refresh();
   }
 
   return (

@@ -6,9 +6,11 @@ import { useState, type FormEvent } from "react";
 
 import { AuthInput } from "@/components/auth/AuthInput";
 import { SubmitButton } from "@/components/auth/SubmitButton";
-import { fetchCsrfToken } from "@/lib/client-security";
+type LoginFormProps = {
+  csrfToken: string;
+};
 
-export function LoginForm() {
+export function LoginForm({ csrfToken }: LoginFormProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,13 +21,6 @@ export function LoginForm() {
     event.preventDefault();
     setError(null);
     setSubmitting(true);
-
-    const csrfToken = await fetchCsrfToken();
-    if (!csrfToken) {
-      setError("Unable to login.");
-      setSubmitting(false);
-      return;
-    }
 
     const response = await fetch("/api/auth/login", {
       method: "POST",
@@ -42,8 +37,7 @@ export function LoginForm() {
       return;
     }
 
-    router.push(data.role === "ADMIN" ? "/admin/dashboard" : "/home");
-    router.refresh();
+    router.replace(data.role === "ADMIN" ? "/admin/dashboard" : "/home");
   }
 
   return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { fetchCsrfToken } from "@/lib/client-security";
 import type { FieldErrors } from "@/lib/form-errors";
 import { formatStatusLabel } from "@/lib/form-errors";
@@ -40,7 +40,6 @@ const statusClass: Record<SuggestionItem["displayStatus"], string> = {
 };
 
 export function UserSuggestionList({ initialSuggestions }: { initialSuggestions: SuggestionItem[] }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const [filter, setFilter] = useState<"APPROVED" | "PENDING" | "REJECTED" | "CANCELLED">("PENDING");
@@ -105,7 +104,6 @@ export function UserSuggestionList({ initialSuggestions }: { initialSuggestions:
 
     showToast(data.message ?? "Suggestion updated.", "success");
     setEditing(null);
-    router.refresh();
   }
 
   async function deleteSuggestion() {
@@ -121,7 +119,6 @@ export function UserSuggestionList({ initialSuggestions }: { initialSuggestions:
     if (!response.ok) return showToast(data.error ?? "Unable to delete suggestion.", "error");
     showToast(data.message ?? "Suggestion deleted.", "success");
     setDeleteId(null);
-    router.refresh();
   }
 
   return (

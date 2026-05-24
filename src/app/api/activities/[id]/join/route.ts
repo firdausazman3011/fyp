@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireRole } from "@/lib/authorization";
 import { validateCsrfOrThrow } from "@/lib/security";
 import { activityScheduleOverlaps } from "@/lib/activity-time";
+import { revalidateActivityRoutes } from "@/lib/revalidate-routes";
 
 export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, response } = await requireRole("USER");
@@ -70,6 +71,7 @@ export async function POST(_: Request, { params }: { params: Promise<{ id: strin
     create: { activityId: id, userId: user.userId },
   });
 
+  revalidateActivityRoutes();
   return NextResponse.json({ message: "Joined activity successfully." });
 }
 
@@ -97,5 +99,6 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
     where: { activityId: id, userId: user.userId },
   });
 
+  revalidateActivityRoutes();
   return NextResponse.json({ message: "You have unjoined this activity." });
 }

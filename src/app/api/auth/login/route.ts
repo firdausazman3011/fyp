@@ -31,6 +31,8 @@ export async function POST(request: Request) {
       userId: user.id,
       email: user.email,
       role: user.role,
+      name: user.name,
+      profilePicture: user.profilePicture,
     });
 
     await setAuthCookie(token);

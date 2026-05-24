@@ -3,13 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { isActivityCompleted } from "@/lib/activity-time";
 import { getTodayDateOnly } from "@/lib/date-only";
 
-const latestUpcomingInclude = {
-  participants: true,
-} satisfies Prisma.ActivityInclude;
+const latestUpcomingSelect = {
+  id: true,
+  title: true,
+  description: true,
+  date: true,
+  timeLabel: true,
+  durationMinutes: true,
+  location: true,
+  imageUrl: true,
+  status: true,
+  _count: { select: { participants: true } },
+} satisfies Prisma.ActivitySelect;
 
 export type LatestUpcomingActivity = Prisma.ActivityGetPayload<{
-  include: typeof latestUpcomingInclude;
-}>;
+  select: typeof latestUpcomingSelect;
+}> & {
+  participants: { length: number };
+};
 
 /** Up to 4 published, non-cancelled, non-completed activities from today onward (by calendar date). */
 export async function getLatestUpcomingActivities(limit = 4): Promise<LatestUpcomingActivity[]> {
@@ -20,7 +31,7 @@ export async function getLatestUpcomingActivities(limit = 4): Promise<LatestUpco
     },
     orderBy: [{ date: "asc" }, { timeLabel: "asc" }],
     take: limit * 5,
-    include: latestUpcomingInclude,
+    select: latestUpcomingSelect,
   });
 
   return candidates
@@ -29,5 +40,9 @@ export async function getLatestUpcomingActivities(limit = 4): Promise<LatestUpco
         activity.status !== ActivityStatus.CANCELLED &&
         !isActivityCompleted(activity.date, activity.timeLabel, activity.durationMinutes),
     )
-    .slice(0, limit);
+    .slice(0, limit)
+    .map((activity) => ({
+      ...activity,
+      participants: { length: activity._count.participants },
+    }));
 }

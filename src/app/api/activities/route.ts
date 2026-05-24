@@ -8,6 +8,7 @@ import { logAdminAction } from "@/lib/audit";
 import { activityScheduleOverlaps } from "@/lib/activity-time";
 import { getTodayDateOnly } from "@/lib/date-only";
 import { serializeActivityDate } from "@/lib/date-format";
+import { revalidateActivityRoutes } from "@/lib/revalidate-routes";
 
 export async function GET() {
   const { user, response } = await requireAuth();
@@ -108,6 +109,7 @@ export async function POST(request: Request) {
     }
 
     await logAdminAction(user.userId, "CREATE_ACTIVITY", "activity", activity.id);
+    revalidateActivityRoutes();
     return NextResponse.json(
       {
         message: "Activity created successfully.",

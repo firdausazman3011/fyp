@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { parseActivityDateOnly, suggestionSchema, toZodErrorMessage, validationErrorResponse } from "@/lib/validation";
 import { requireAuth, requireRole } from "@/lib/authorization";
 import { sanitizeText, validateCsrfOrThrow } from "@/lib/security";
+import { revalidateSuggestionRoutes } from "@/lib/revalidate-routes";
 
 export async function GET() {
   const { user, response } = await requireAuth();
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
       },
     });
 
+    revalidateSuggestionRoutes();
     return NextResponse.json({ message: "Suggestion submitted successfully.", suggestion }, { status: 201 });
   } catch (error) {
     const validationResponse = validationErrorResponse(error);

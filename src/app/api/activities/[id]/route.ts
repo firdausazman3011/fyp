@@ -7,6 +7,7 @@ import { parseActivityDateOnly, toZodErrorMessage, updateActivitySchema, validat
 import { ActivityStatus } from "@prisma/client";
 import { activityScheduleOverlaps } from "@/lib/activity-time";
 import { serializeActivityDate } from "@/lib/date-format";
+import { revalidateActivityRoutes } from "@/lib/revalidate-routes";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { user, response } = await requireRole("ADMIN");
@@ -94,6 +95,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     });
 
     await logAdminAction(user.userId, "UPDATE_ACTIVITY", "activity", id);
+    revalidateActivityRoutes();
     return NextResponse.json({
       message: "Activity updated successfully.",
       activity: {
@@ -134,6 +136,7 @@ export async function DELETE(_: Request, { params }: { params: Promise<{ id: str
   }
   await prisma.activity.delete({ where: { id } });
   await logAdminAction(user.userId, "DELETE_ACTIVITY", "activity", id);
+  revalidateActivityRoutes();
 
   return NextResponse.json({ message: "Activity deleted successfully." });
 }
