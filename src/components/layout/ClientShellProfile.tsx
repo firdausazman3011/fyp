@@ -2,18 +2,32 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { AuthPayload } from "@/lib/auth-jwt";
+import type { AuthPayload } from "@/lib/auth";
 import { getCachedProfile, setCachedProfile } from "@/lib/profile-cache";
 import { ProfileMenu } from "@/components/layout/ProfileMenu";
 import { ProfileMenuSkeleton } from "@/components/layout/ProfileMenuSkeleton";
 
 type ClientShellProfileProps = {
   role: "USER" | "ADMIN";
+  initialUser?: AuthPayload | null;
 };
 
-export function ClientShellProfile({ role }: ClientShellProfileProps) {
+export function ClientShellProfile({ role, initialUser = null }: ClientShellProfileProps) {
   const router = useRouter();
-  const [user, setUser] = useState<AuthPayload | null | undefined>(() => getCachedProfile());
+  const [user, setUser] = useState<AuthPayload | null | undefined>(() => {
+    const cached = getCachedProfile();
+    if (cached !== undefined) {
+      return cached;
+    }
+    return initialUser;
+  });
+
+  useEffect(() => {
+    if (initialUser !== undefined) {
+      setCachedProfile(initialUser);
+      setUser(initialUser);
+    }
+  }, [initialUser]);
 
   useEffect(() => {
     function onProfileUpdated() {
@@ -36,6 +50,18 @@ export function ClientShellProfile({ role }: ClientShellProfileProps) {
         return;
       }
       setUser(cached);
+      return;
+    }
+
+    if (initialUser !== undefined) {
+      if (!initialUser) {
+        router.replace("/login");
+        return;
+      }
+      if (initialUser.role !== role) {
+        router.replace(role === "ADMIN" ? "/home" : "/admin/dashboard");
+        return;
+      }
       return;
     }
 
@@ -72,7 +98,7 @@ export function ClientShellProfile({ role }: ClientShellProfileProps) {
     return () => {
       cancelled = true;
     };
-  }, [role, router]);
+  }, [initialUser, role, router]);
 
   if (user === undefined || !user) {
     return <ProfileMenuSkeleton />;
