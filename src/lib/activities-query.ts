@@ -22,6 +22,18 @@ export type LatestUpcomingActivity = Prisma.ActivityGetPayload<{
   participants: { length: number };
 };
 
+const latestUpcomingSummarySelect = {
+  id: true,
+  title: true,
+  date: true,
+  location: true,
+  timeLabel: true,
+} satisfies Prisma.ActivitySelect;
+
+export type LatestUpcomingActivitySummary = Prisma.ActivityGetPayload<{
+  select: typeof latestUpcomingSummarySelect;
+}>;
+
 /** Up to 4 published, non-cancelled, non-completed activities from today onward (by calendar date). */
 export async function getLatestUpcomingActivities(limit = 4): Promise<LatestUpcomingActivity[]> {
   const candidates = await prisma.activity.findMany({
@@ -45,4 +57,28 @@ export async function getLatestUpcomingActivities(limit = 4): Promise<LatestUpco
       ...activity,
       participants: { length: activity._count.participants },
     }));
+}
+
+export async function getLatestUpcomingActivitySummaries(
+  limit = 3,
+): Promise<LatestUpcomingActivitySummary[]> {
+  const today = getTodayDateOnly();
+  const now = new Date();
+  const currentTimeLabel = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+  return prisma.activity.findMany({
+    where: {
+      status: ActivityStatus.PUBLISHED,
+      OR: [
+        { date: { gt: today } },
+        {
+          date: today,
+          timeLabel: { gte: currentTimeLabel },
+        },
+      ],
+    },
+    orderBy: [{ date: "asc" }, { timeLabel: "asc" }],
+    take: limit,
+    select: latestUpcomingSummarySelect,
+  });
 }
