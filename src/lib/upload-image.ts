@@ -1,6 +1,7 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 
-export const IMAGE_BUCKET = "image";
+/** Must match the bucket name in Supabase Storage exactly (case-sensitive). */
+export const IMAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ?? "images";
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
