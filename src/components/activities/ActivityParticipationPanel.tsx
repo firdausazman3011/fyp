@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchCsrfToken } from "@/lib/client-security";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -13,6 +13,8 @@ type ActivityParticipationPanelProps = {
   canAttendNow: boolean;
   cancelled: boolean;
   full: boolean;
+  onJoinedChange?: (joined: boolean) => void;
+  onAttendanceSigned?: () => void;
 };
 
 export function ActivityParticipationPanel({
@@ -22,12 +24,19 @@ export function ActivityParticipationPanel({
   canAttendNow,
   cancelled,
   full,
+  onJoinedChange,
+  onAttendanceSigned,
 }: ActivityParticipationPanelProps) {
   const { showToast } = useToast();
   const [isJoined, setIsJoined] = useState(joined);
   const [hasAttendance, setHasAttendance] = useState(attendanceSigned);
   const [pending, setPending] = useState(false);
   const [confirmUnjoinOpen, setConfirmUnjoinOpen] = useState(false);
+
+  useEffect(() => {
+    setIsJoined(joined);
+    setHasAttendance(attendanceSigned);
+  }, [joined, attendanceSigned]);
 
   async function request(method: "POST" | "DELETE", url: string, successMessage: string) {
     const csrfToken = await fetchCsrfToken();
@@ -56,7 +65,10 @@ export function ActivityParticipationPanel({
   async function handleJoin() {
     if (cancelled) return;
     const ok = await request("POST", `/api/activities/${activityId}/join`, "Joined activity successfully.");
-    if (ok) setIsJoined(true);
+    if (ok) {
+      setIsJoined(true);
+      onJoinedChange?.(true);
+    }
   }
 
   async function handleUnjoin() {
@@ -65,12 +77,16 @@ export function ActivityParticipationPanel({
       setConfirmUnjoinOpen(false);
       setIsJoined(false);
       setHasAttendance(false);
+      onJoinedChange?.(false);
     }
   }
 
   async function handleAttendance() {
     const ok = await request("POST", `/api/activities/${activityId}/attendance`, "Attendance signed successfully.");
-    if (ok) setHasAttendance(true);
+    if (ok) {
+      setHasAttendance(true);
+      onAttendanceSigned?.();
+    }
   }
 
   return (

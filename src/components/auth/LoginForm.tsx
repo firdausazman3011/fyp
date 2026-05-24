@@ -6,7 +6,9 @@ import { useState, type FormEvent } from "react";
 
 import { AuthInput } from "@/components/auth/AuthInput";
 import { SubmitButton } from "@/components/auth/SubmitButton";
+
 type LoginFormProps = {
+  /** Injected by server component login/page.tsx — never fetched client-side. */
   csrfToken: string;
 };
 
@@ -21,6 +23,12 @@ export function LoginForm({ csrfToken }: LoginFormProps) {
     event.preventDefault();
     setError(null);
     setSubmitting(true);
+
+    if (!csrfToken) {
+      setError("Unable to login.");
+      setSubmitting(false);
+      return;
+    }
 
     const response = await fetch("/api/auth/login", {
       method: "POST",
@@ -42,6 +50,7 @@ export function LoginForm({ csrfToken }: LoginFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <input type="hidden" name="csrf-token" value={csrfToken} readOnly />
       <AuthInput
         id="email"
         label="Email"
@@ -68,7 +77,7 @@ export function LoginForm({ csrfToken }: LoginFormProps) {
       <SubmitButton label="Login" pendingLabel="Logging in..." isPending={submitting} />
 
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <Link href="/signup" className="underline-offset-4 transition-colors hover:text-foreground">
+        <Link href="/signup" className="underline-offset-4 transition-colors hover:foreground">
           Create account
         </Link>
         <Link href="/forgot-password" className="font-medium text-primary underline-offset-4 hover:underline">

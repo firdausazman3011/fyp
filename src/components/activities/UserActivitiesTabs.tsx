@@ -3,48 +3,40 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ActivityStatus } from "@prisma/client";
-import { AppImage } from "@/components/ui/AppImage";
-import { ActivityParticipationPanel } from "@/components/activities/ActivityParticipationPanel";
-import { getActivityEnd, isActivityActiveNow } from "@/lib/activity-time";
+import { ActivityDetailModal } from "@/components/activities/ActivityDetailModal";
+import { getActivityEnd } from "@/lib/activity-time";
 import { formatDateDDMMYYYY } from "@/lib/date-format";
+import type { UserActivityListItem } from "@/lib/activities-list";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 
-type ActivityItem = {
-  id: string;
-  title: string;
-  description: string;
-  date: string;
-  timeLabel: string;
-  durationMinutes: number;
-  participantLimit: number;
-  location: string;
-  organizer: string;
-  imageUrl: string;
-  status: ActivityStatus;
-  participantCount: number;
-  joined: boolean;
-  attendanceSigned: boolean;
-};
-
 type Props = {
-  activities: ActivityItem[];
+  activities: UserActivityListItem[];
 };
 
-export function UserActivitiesTabs({ activities }: Props) {
+export function UserActivitiesTabs({ activities: initialActivities }: Props) {
   const searchParams = useSearchParams();
+  const [activities, setActivities] = useState(initialActivities);
   const [sectionTab, setSectionTab] = useState<"ACTIVITY" | "MY_ACTIVITY">("ACTIVITY");
   const [myActivityFilter, setMyActivityFilter] = useState<"ACTIVE" | "COMPLETED" | "CANCELLED">("ACTIVE");
+  const [detailId, setDetailId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setActivities(initialActivities);
+  }, [initialActivities]);
+
   const normalizedItems = useMemo(() => {
     return activities.map((activity) => {
-      const completed = getActivityEnd(new Date(activity.date), activity.timeLabel, activity.durationMinutes).getTime() < Date.now();
+      const completed =
+        getActivityEnd(new Date(activity.date), activity.timeLabel, activity.durationMinutes).getTime() < Date.now();
       const normalizedStatus =
         activity.status === ActivityStatus.CANCELLED ? "CANCELLED" : completed ? "COMPLETED" : "ACTIVE";
       return { ...activity, completed, normalizedStatus };
     });
   }, [activities]);
+
   const activityItems = useMemo(
     () =>
       normalizedItems.filter((activity) => {
@@ -54,10 +46,13 @@ export function UserActivitiesTabs({ activities }: Props) {
       }),
     [normalizedItems],
   );
+
   const myActivityItems = useMemo(
     () => normalizedItems.filter((activity) => activity.joined && activity.normalizedStatus === myActivityFilter),
     [myActivityFilter, normalizedItems],
   );
+
+  const selectedListItem = detailId ? (activities.find((item) => item.id === detailId) ?? null) : null;
 
   useEffect(() => {
     const focus = searchParams.get("focus");
@@ -71,89 +66,63 @@ export function UserActivitiesTabs({ activities }: Props) {
     } else {
       setSectionTab("ACTIVITY");
     }
+    setDetailId(focus);
     requestAnimationFrame(() => {
       const element = document.getElementById(`activity-${focus}`);
       element?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
   }, [searchParams, normalizedItems]);
 
+  function handleParticipationChange(
+    activityId: string,
+    patch: Partial<Pick<UserActivityListItem, "joined" | "attendanceSigned" | "participantCount">>,
+  ) {
+    setActivities((current) =>
+      current.map((item) => (item.id === activityId ? { ...item, ...patch } : item)),
+    );
+  }
+
   function renderCard(activity: (typeof normalizedItems)[number]) {
-    const joined = activity.joined;
-    const canAttendNow = isActivityActiveNow(new Date(activity.date), activity.timeLabel, activity.durationMinutes, new Date());
-    const endTime = getActivityEnd(new Date(activity.date), activity.timeLabel, activity.durationMinutes);
     const isFull = activity.participantCount >= activity.participantLimit;
-    const completed = activity.normalizedStatus === "COMPLETED";
 
     function statusBadge() {
       if (activity.normalizedStatus === "COMPLETED") {
-        return (
-          <Badge variant="muted" className="shrink-0">
-            Completed
-          </Badge>
-        );
+        return <Badge variant="muted" className="shrink-0">Completed</Badge>;
       }
       if (activity.normalizedStatus === "CANCELLED") {
-        return (
-          <Badge variant="destructive" className="shrink-0">
-            Cancelled
-          </Badge>
-        );
+        return <Badge variant="destructive" className="shrink-0">Cancelled</Badge>;
       }
-      if (isFull) {
-        return (
-          <Badge variant="warning" className="shrink-0">
-            Full
-          </Badge>
-        );
+      if (isFull && !activity.joined) {
+        return <Badge variant="warning" className="shrink-0">Full</Badge>;
       }
-      if (joined) {
+      if (activity.joined) {
         return (
           <Badge variant="outline" className="shrink-0 border-blue-200 bg-blue-500/10 text-blue-800">
             Joined
           </Badge>
         );
       }
-      return (
-        <Badge variant="success" className="shrink-0">
-          Active
-        </Badge>
-      );
+      return <Badge variant="success" className="shrink-0">Active</Badge>;
     }
 
     return (
       <Card id={`activity-${activity.id}`} key={activity.id} className="overflow-hidden shadow-sm">
-        <AppImage src={activity.imageUrl} alt={activity.title} className="aspect-video w-full object-cover" />
         <CardHeader className="space-y-2 pb-2">
           <div className="flex items-start justify-between gap-3">
-            <CardTitle className="text-xl leading-snug">{activity.title}</CardTitle>
+            <CardTitle className="text-lg leading-snug">{activity.title}</CardTitle>
             {statusBadge()}
           </div>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p className="leading-relaxed text-foreground/90">{activity.description}</p>
+          <p>{formatDateDDMMYYYY(activity.date)} · {activity.location}</p>
           <p>
-            {formatDateDDMMYYYY(activity.date)} at {activity.timeLabel} · {activity.location}
+            Participants: {activity.participantCount}/{activity.participantLimit}
+            {activity.joined ? " · You joined" : null}
+            {activity.attendanceSigned ? " · Attendance signed" : null}
           </p>
-          <p>Duration: {activity.durationMinutes} minutes</p>
-          <p>Attendance window ends at {endTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</p>
-          <p>Organizer: {activity.organizer}</p>
-          <p>
-            Participants: {activity.participantCount}/{activity.participantLimit} ({isFull ? "Full" : "Open"})
-          </p>
-          {!completed ? (
-            <ActivityParticipationPanel
-              activityId={activity.id}
-              cancelled={activity.status === ActivityStatus.CANCELLED}
-              full={isFull && !joined}
-              joined={joined}
-              attendanceSigned={activity.attendanceSigned}
-              canAttendNow={canAttendNow}
-            />
-          ) : (
-            <p className="rounded-md border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-              {activity.attendanceSigned ? "Attendance signed for this activity." : "Attendance not signed."}
-            </p>
-          )}
+          <Button type="button" size="sm" variant="outline" onClick={() => setDetailId(activity.id)}>
+            View details
+          </Button>
         </CardContent>
       </Card>
     );
@@ -218,6 +187,13 @@ export function UserActivitiesTabs({ activities }: Props) {
           </div>
         ) : null}
       </div>
+
+      <ActivityDetailModal
+        activityId={detailId}
+        listItem={selectedListItem}
+        onClose={() => setDetailId(null)}
+        onParticipationChange={handleParticipationChange}
+      />
     </section>
   );
 }
